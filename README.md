@@ -1,23 +1,40 @@
-# نظام مرسى — Django Scaffold
+# مَرسى — Fish Shop ERP / POS
 
-هذا المجلد يحتوي على الهيكل الأساسي لمشروع Django مستقل لنظام محاسبة ومخزون محلات الأسماك.
+نظام Django مستقل لإدارة المشتريات والمخزون والمبيعات والحسابات لفروع محلات الأسماك.
 
-## التشغيل المحلي
+## الحالة الحالية
+**Foundation / Sprint 1 + domain skeleton**. تم إنشاء المشروع من الصفر ووضع النماذج الأساسية والخدمات الجوهرية ووثائق الاستمرارية. لم يتم اعتبار النظام مكتملًا بعد؛ راجع `PROJECT_STATE.md` قبل تنفيذ أي مرحلة لاحقة.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
+## التشغيل
+1. انسخ `.env.example` إلى `.env`.
+2. شغّل PostgreSQL عبر `docker compose up -d db`.
+3. ثبّت المتطلبات: `pip install -r requirements.txt`.
+4. نفّذ `python manage.py makemigrations` ثم `python manage.py migrate`.
+5. أنشئ مديرًا: `python manage.py createsuperuser`.
+6. شغّل: `python manage.py runserver`.
+7. افحص `http://127.0.0.1:8000/health/`.
 
-افتح `http://127.0.0.1:8000/health/` للتحقق من حالة الخدمة، و`/admin/` للوحة الإدارة.
+## قواعد لا تكسرها
+- PostgreSQL هو قاعدة البيانات المعتمدة.
+- `StockMovement` هو دفتر الحركة الرسمي؛ `StockBalance` رصيد مشتق سريع.
+- لا تعديل مباشر لرصيد المخزون.
+- كل عملية مخزون حساسة يجب أن تكون ذرية ومقفلة عند التزامن.
+- البيع يخرج الوزن الخام من المخزون، بينما قيمة الفاتورة تحسب من الوزن المنظف.
+- التكلفة تستخدم Weighted Average Cost وتُحفظ وقت الحركة/البيع.
+- فرق التنظيف لا يعتبر هالكًا تلقائيًا.
+- المستندات المعتمدة لا تحذف؛ تستخدم الإلغاء/العكس/التصحيح مع سبب وسجل تدقيق.
+- أي تعديل في قواعد الوزن أو التكلفة أو الإغلاق المالي يحتاج قرارًا موثقًا.
 
-يستخدم المشروع PostgreSQL عند وضع `DATABASE_URL` بصيغة PostgreSQL، ويستخدم SQLite محلياً كخيار تطوير احتياطي فقط. لا تضع الأسرار داخل Git.
+## البنية
+`accounts` المستخدمون والأدوار — `branches` الفروع والمواقع — `catalog` المنتجات والموردون والأسعار — `inventory` محرك المخزون — `purchases` المشتريات — `transfers` التحويلات — `sales` الورديات والمبيعات والمدفوعات — `processing` الوزن الخام/المنظف — `delivery` تطبيقات التوصيل والتسويات — `expenses` المصروفات — `closing` إغلاق الورديات — `reports` التقارير — `audit` التدقيق.
 
-## النطاق الحالي
+## الوثيقة المرجعية
+اقرأ `PROJECT_STATE.md` و `ARCHITECTURE.md` قبل أي تغيير كبير. عند الانتقال إلى محرر/وكيل آخر، أعطه نص `HANDOFF.md` أو اطلب منه قراءة هذه الملفات أولًا.
 
-تم تجهيز المشروع، المستخدم المخصص، الأدوار الأولية، الفروع، والمستودعات. الوحدات المحاسبية والمخزنية ستنفذ في مراحل Sprint التالية.
+
+## Runtime bootstrap
+بعد تثبيت المتطلبات وتشغيل PostgreSQL، شغّل:
+
+`python scripts/bootstrap_runtime.py`
+
+سيقوم بالفحص ثم `makemigrations` ثم `migrate` ثم الاختبارات. لا تُعتبر migrations أو اختبارات PostgreSQL مكتملة قبل تنفيذها فعليًا.

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}لوحة التحكم — مَرسى{% endblock %}
+{% block content %}
+<section class="welcome-row">
+  <div><p class="muted">مرحبًا بك في مَرسى</p><h2>كل عمليات المحل في مكان واحد.</h2><p class="muted">هذه اللوحة ستتحول تدريجيًا إلى مركز التشغيل اليومي للمبيعات والمخزون والحسابات.</p></div>
+  <a class="primary-button" href="{% url 'sales:pos' %}">فتح نقطة البيع</a>
+</section>
+<section class="kpi-grid">
+  <article class="kpi"><span>إجمالي المبيعات</span><strong>{{ sales_total|floatformat:2 }}</strong><small>الفواتير المعتمدة</small></article>
+  <article class="kpi"><span>المصاريف المعتمدة</span><strong>{{ expense_total|floatformat:2 }}</strong><small>الحركات المالية الخارجة</small></article>
+  <article class="kpi"><span>الورديات المفتوحة</span><strong>{{ open_shifts }}</strong><small>حسب نطاق صلاحيتك</small></article>
+  <article class="kpi"><span>صافي الحركة المالية</span><strong>{{ net_total|floatformat:2 }}</strong><small>مبيعات ناقص مصاريف</small></article>
+</section>
+<section class="dashboard-grid">
+  <article class="panel"><div class="panel-head"><div><span class="eyebrow">الوحدات</span><h3>التشغيل اليومي</h3></div></div><div class="module-grid"><a href="{% url 'sales:list' %}"><b>المبيعات</b><span>فواتير ودفعات وورديات</span></a><a href="{% url 'inventory:overview' %}"><b>المخزون</b><span>الأرصدة والحركات والتكلفة</span></a><a href="/purchases/"><b>المشتريات</b><span>الموردون والاستلام والتكلفة</span></a><a href="/transfers/"><b>التحويلات</b><span>من المركزي إلى الفروع</span></a></div></article>
+  <article class="panel"><div class="panel-head"><div><span class="eyebrow">المعمارية</span><h3>قواعد مَرسى</h3></div></div><ul class="rules"><li>الحركة المخزنية هي مصدر الحقيقة.</li><li>الوزن الخام يخص خروج المخزون.</li><li>الوزن المنظف يخص الفاتورة.</li><li>لا تعديل مباشر للأرصدة.</li></ul></article>
+</section>
+{% endblock %}

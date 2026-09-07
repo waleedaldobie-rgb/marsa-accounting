@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block page_heading %}المخزون{% endblock %}
+{% block content %}
+<div class="page-head"><h2>رصيد المخزون</h2><a class="btn" href="{% url 'inventory:waste_list' %}">الهدر والتالف</a></div>
+<div class="card"><form class="filters"><input name="q" value="{{ q }}" placeholder="اسم المنتج أو SKU"><select name="location"><option value="">كل المواقع</option>{% for loc in locations %}<option value="{{ loc.pk }}" {% if location|stringformat:'s' == loc.pk|stringformat:'s' %}selected{% endif %}>{{ loc.name }}</option>{% endfor %}</select><button class="btn btn-primary">بحث</button></form></div>
+<div class="card"><table class="table"><thead><tr><th>الموقع</th><th>المنتج</th><th>الكمية KG</th><th>متوسط التكلفة</th><th>قيمة المخزون</th></tr></thead><tbody>{% for b in balances %}<tr><td>{{ b.location.name }}</td><td>{{ b.product.name }}</td><td>{{ b.quantity }}</td><td>{{ b.average_cost }}</td><td>{{ b.stock_value }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد أرصدة.</td></tr>{% endfor %}</tbody></table>
+{% if page_obj.has_other_pages %}<div class="pagination">{% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&location={{ location }}&page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}<span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&location={{ location }}&page={{ page_obj.next_page_number }}">التالي</a>{% endif %}</div>{% endif %}</div>
+<div class="card"><h3>آخر حركات المخزون</h3><table class="table"><thead><tr><th>التاريخ</th><th>المنتج</th><th>الحركة</th><th>الكمية</th><th>التكلفة</th></tr></thead><tbody>{% for m in movements %}<tr><td>{{ m.created_at|date:"Y-m-d H:i" }}</td><td>{{ m.product.name }}</td><td>{{ m.get_movement_type_display }}</td><td>{{ m.quantity }}</td><td>{{ m.total_cost }}</td></tr>{% empty %}<tr><td colspan="5">لا توجد حركات.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block title %}الإغلاق المحاسبي | مَرسى{% endblock %}{% block page_heading %}الإغلاق المحاسبي{% endblock %}{% block content %}
+<div class="page-actions"><a class="btn primary" href="{% url 'sales:shifts' %}">الورديات</a></div>
+<div class="card"><div class="table-wrap"><table><thead><tr><th>الوردية</th><th>الكاشير</th><th>الفرع</th><th>المتوقع</th><th>الفعلي</th><th>الفرق</th><th>الحالة</th></tr></thead><tbody>
+{% for c in closings %}<tr><td><a href="{% url 'closing:detail' c.pk %}">#{{ c.shift_id }}</a></td><td>{{ c.shift.cashier.get_full_name|default:c.shift.cashier.username }}</td><td>{{ c.shift.branch.name }}</td><td>{{ c.expected_cash }}</td><td>{{ c.actual_cash }}</td><td>{{ c.difference }}</td><td><span class="badge">{{ c.get_status_display }}</span></td></tr>{% empty %}<tr><td colspan="7" class="empty">لا توجد عمليات إغلاق.</td></tr>{% endfor %}
+</tbody></table></div></div>{% endblock %}
