@@ -12,6 +12,7 @@ ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
+    "rest_framework", "rest_framework.authtoken",
     "apps.accounts", "apps.branches", "apps.catalog", "apps.inventory", "apps.purchases",
     "apps.transfers", "apps.sales", "apps.processing", "apps.delivery", "apps.expenses",
     "apps.closing", "apps.reports", "apps.audit",
@@ -44,6 +45,10 @@ DATABASES = {"default": {
 }}
 
 AUTH_USER_MODEL = "accounts.User"
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.TokenAuthentication",),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+}
 LANGUAGE_CODE = "ar"
 LANGUAGES = [("ar", "العربية"), ("en", "English")]
 TIME_ZONE = "Asia/Aden"

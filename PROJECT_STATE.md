@@ -163,3 +163,21 @@ Sprint 16: production-ready migrations after runtime verification, backup/restor
 
 ### Next
 المرحلة التالية ليست إضافة ميزات عشوائية: تشغيل runtime حقيقي، إنشاء ومراجعة migrations، تنفيذ الاختبارات، ثم backup/restore وUAT النهائي، مع إصلاح أي أخطاء runtime تظهر فعليًا.
+
+
+## Sprint 19 — REST API
+- تمت إضافة Django REST Framework تحت `/api/v1/`.
+- تمت إضافة Token Authentication ونقطة `/api/v1/auth/token/` ونقطة `/api/v1/me/`.
+- تمت إضافة APIs للكتالوج والأسعار والموردين والفروع والمواقع والمخزون والمشتريات ومرتجعاتها والورديات والمبيعات ومرتجعاتها والتحويلات والمصروفات والإغلاق والتقارير.
+- عمليات التغيير الحساسة تمر عبر خدمات الدومين الحالية، ولا تسمح serializers بتعديل `invoice_no` أو `status` أو `total` أو `cogs` أو حقول الاعتماد والتدقيق.
+- تم تطبيق عزل الفروع والتحقق من الدور والملكية والصلاحيات على الخادم.
+- تمت إضافة اختبارات API للمصادقة والصلاحيات وعزل الفروع والتحقق والبيع والمخزون.
+
+### Verification
+- `python manage.py check`: OK.
+- PostgreSQL migrations داخل Docker: لا توجد migrations معلقة.
+- `pytest -q`: 18 passed.
+- لا تشمل هذه المرحلة OpenAPI أو refresh tokens أو rate limiting أو pagination موحد.
+
+### Next
+Sprint 20 يجب أن يحدد صراحة قبل التنفيذ؛ لا توسع نطاق REST API تلقائيًا.

@@ -1,0 +1,39 @@
+from django.urls import path
+
+from .views import (
+    BranchLocationView, CatalogView, ClosingView, ExpenseView, InventoryView,
+    MeView, PriceView, ProductDetailView, PurchaseApproveView, PurchaseReturnView,
+    PurchaseView, ReportsView, SaleIssueView, SalesReturnView, SaleView, ShiftView,
+    SupplierView, TokenLoginView, TransferView,
+)
+
+app_name = "api-v1"
+urlpatterns = [
+    path("auth/token/", TokenLoginView.as_view(), name="token"),
+    path("me/", MeView.as_view(), name="me"),
+    path("branches/", BranchLocationView.as_view(), name="branches"),
+    path("catalog/", CatalogView.as_view(), name="catalog"),
+    path("catalog/products/<int:pk>/", ProductDetailView.as_view(), name="product-detail"),
+    path("catalog/prices/", PriceView.as_view(), name="prices"),
+    path("catalog/suppliers/", SupplierView.as_view(), name="suppliers"),
+    path("inventory/", InventoryView.as_view(), name="inventory"),
+    path("purchases/", PurchaseView.as_view(), name="purchases"),
+    path("purchases/<int:pk>/", PurchaseView.as_view(), name="purchase-detail"),
+    path("purchases/<int:pk>/approve/", PurchaseApproveView.as_view(), name="purchase-approve"),
+    path("purchase-returns/", PurchaseReturnView.as_view(), name="purchase-returns"),
+    path("purchase-returns/<int:pk>/approve/", PurchaseReturnView.as_view(), {"action": "approve"}, name="purchase-return-approve"),
+    path("shifts/", ShiftView.as_view(), name="shifts"),
+    path("sales/", SaleView.as_view(), name="sales"),
+    path("sales/<int:pk>/", SaleView.as_view(), name="sale-detail"),
+    path("sales/<int:pk>/issue/", SaleIssueView.as_view(), name="sale-issue"),
+    path("sales-returns/", SalesReturnView.as_view(), name="sales-returns"),
+    path("sales-returns/<int:pk>/approve/", SalesReturnView.as_view(), {"action": "approve"}, name="sales-return-approve"),
+    path("transfers/", TransferView.as_view(), name="transfers"),
+    path("transfers/<int:pk>/send/", TransferView.as_view(), {"action": "send"}, name="transfer-send"),
+    path("transfers/<int:pk>/receive/", TransferView.as_view(), {"action": "receive"}, name="transfer-receive"),
+    path("expenses/", ExpenseView.as_view(), name="expenses"),
+    path("expenses/<int:pk>/approve/", ExpenseView.as_view(), {"action": "approve"}, name="expense-approve"),
+    path("closing/shifts/<int:shift_id>/", ClosingView.as_view(), name="closing-shift"),
+    path("closing/<int:pk>/approve/", ClosingView.as_view(), {"action": "approve"}, name="closing-approve"),
+    path("reports/<str:report>/", ReportsView.as_view(), name="report"),
+]

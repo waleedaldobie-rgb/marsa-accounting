@@ -93,3 +93,12 @@ Added the formal UI/UX reference layer: DESIGN_SYSTEM.md, SCREENS.md, NAVIGATION
 - إضافة إعدادات أمنية قابلة للضبط عبر متغيرات البيئة.
 - Syntax check: 98 Python files / 0 errors.
 - ما زالت migrations وDjango/PostgreSQL runtime tests غير منفذة في بيئة البناء.
+
+
+## v0.17 — Sprint 19 REST API
+- Added Django REST Framework APIs under `/api/v1/`.
+- Added Token Authentication and authenticated user endpoint.
+- Added catalog, inventory, purchases, sales, transfers, expenses, closing and reports API resources.
+- Reused existing domain services for sensitive operations and protected sensitive fields in serializers.
+- Added server-side role and branch isolation checks.
+- Added API tests; PostgreSQL runtime verification completed with 18 passing tests.
