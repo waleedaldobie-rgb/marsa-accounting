@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,7 +55,15 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 database_url = os.getenv("DATABASE_URL", "")
 if database_url.startswith("postgresql"):
-    DATABASES = {"default": {"ENGINE": "django.db.backends.postgresql", "NAME": database_url}}
+    parsed = urlparse(database_url)
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": parsed.path.lstrip("/"),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "localhost",
+        "PORT": str(parsed.port or 5432),
+    }}
 else:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 
