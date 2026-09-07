@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: marsa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-marsa_db}
+      POSTGRES_USER: ${POSTGRES_USER:-marsa_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marsa_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marsa_user} -d ${POSTGRES_DB:-marsa_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    container_name: marsa-web
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      DEBUG: ${DEBUG:-True}
+      SECRET_KEY: ${SECRET_KEY:-local-development-secret}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-marsa_user}:${POSTGRES_PASSWORD:-marsa_password}@db:5432/${POSTGRES_DB:-marsa_db}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-127.0.0.1,localhost}
+      TIME_ZONE: ${TIME_ZONE:-Asia/Riyadh}
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
