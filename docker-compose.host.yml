@@ -1,0 +1,10 @@
+# Use this override on hosts where Docker cannot manage iptables bridge rules.
+services:
+  db:
+    network_mode: host
+    ports: []
+  web:
+    network_mode: host
+    ports: []
+    environment:
+      POSTGRES_HOST: 127.0.0.1

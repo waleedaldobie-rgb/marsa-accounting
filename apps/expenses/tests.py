@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from apps.branches.models import Branch
-from apps.sales.models import PaymentTransaction
+from apps.sales.models import PaymentTransaction, Shift
 from .models import Expense
 from .services import approve_expense, cancel_expense
 
@@ -19,8 +19,10 @@ class ExpenseWorkflowTests(TestCase):
         self.assertFalse(PaymentTransaction.objects.filter(reference_type='Expense', reference_id=str(expense.pk)).exists())
 
     def test_approved_expense_creates_one_out_transaction(self):
-        expense = Expense.objects.create(branch=self.branch, category='نقل', amount=Decimal('125.50'), payment_method='CASH', created_by=self.user)
+        shift = Shift.objects.create(branch=self.branch, cashier=self.user, opening_cash=Decimal('0'))
+        expense = Expense.objects.create(branch=self.branch, shift=shift, category='نقل', amount=Decimal('125.50'), payment_method='CASH', created_by=self.user)
         approve_expense(expense=expense, user=self.user)
+        expense.refresh_from_db()
         self.assertEqual(expense.status, Expense.Status.APPROVED)
         tx = PaymentTransaction.objects.get(reference_type='Expense', reference_id=str(expense.pk), direction='OUT')
         self.assertEqual(tx.amount, Decimal('125.50'))
@@ -30,5 +32,6 @@ class ExpenseWorkflowTests(TestCase):
     def test_cancelled_expense_has_no_ledger_effect(self):
         expense = Expense.objects.create(branch=self.branch, category='أخرى', amount=Decimal('30'), created_by=self.user)
         cancel_expense(expense=expense, user=self.user)
+        expense.refresh_from_db()
         self.assertEqual(expense.status, Expense.Status.CANCELLED)
         self.assertFalse(PaymentTransaction.objects.filter(reference_type='Expense', reference_id=str(expense.pk)).exists())
