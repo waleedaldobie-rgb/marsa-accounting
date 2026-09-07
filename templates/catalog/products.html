@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}المنتجات | مَرسى{% endblock %}
+{% block page_heading %}المنتجات والأسعار{% endblock %}
+{% block content %}
+<div class="page-toolbar"><form class="search-form" method="get"><input name="q" value="{{ q }}" placeholder="بحث بالاسم أو SKU"><button class="btn btn-secondary">بحث</button></form><div class="toolbar-actions"><a class="btn btn-secondary" href="{% url 'catalog:import_template' %}">قالب CSV</a><a class="btn btn-secondary" href="{% url 'catalog:import' %}">استيراد CSV</a><a class="btn btn-primary" href="{% url 'catalog:product_create' %}">+ إضافة منتج</a></div></div>
+<div class="card"><div class="table-wrap"><table><thead><tr><th>SKU</th><th>المنتج</th><th>السعر الحالي</th><th>الحالة</th><th></th></tr></thead><tbody>{% for p in products %}<tr><td dir="ltr">{{ p.sku }}</td><td><a href="{% url 'catalog:product_detail' p.pk %}">{{ p.name }}</a></td><td>{% with cp=p.current_price %}{% if cp %}{{ cp.price }} ر.ي / كجم{% else %}غير محدد{% endif %}{% endwith %}</td><td>{% if p.is_active %}<span class="badge success">نشط</span>{% else %}<span class="badge">متوقف</span>{% endif %}</td><td><a href="{% url 'catalog:product_detail' p.pk %}">التفاصيل</a></td></tr>{% empty %}<tr><td colspan="5" class="empty">لا توجد منتجات.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

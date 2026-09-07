@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}التقارير | مَرسى{% endblock %}
+{% block page_heading %}التقارير والربحية{% endblock %}
+{% block content %}
+<form class="card filter-bar" method="get">
+  <label>من <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}"></label>
+  <label>إلى <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}"></label>
+  <button class="primary-button" type="submit">تطبيق</button>
+</form>
+<section class="kpi-grid">
+  <article class="kpi"><span>المبيعات</span><strong>{{ sales_total|floatformat:2 }}</strong><small>{{ invoice_count }} فاتورة</small></article>
+  <article class="kpi"><span>تكلفة المبيعات</span><strong>{{ cogs_total|floatformat:2 }}</strong><small>COGS</small></article>
+  <article class="kpi"><span>مجمل الربح</span><strong>{{ gross_profit|floatformat:2 }}</strong><small>المبيعات − التكلفة</small></article>
+  <article class="kpi"><span>صافي الربح التشغيلي</span><strong>{{ net_profit|floatformat:2 }}</strong><small>بعد المصاريف</small></article>
+</section>
+<section class="kpi-grid">
+  <article class="kpi"><span>الداخل المالي</span><strong>{{ payment_in|floatformat:2 }}</strong></article>
+  <article class="kpi"><span>الخارج المالي</span><strong>{{ payment_out|floatformat:2 }}</strong></article>
+  <article class="kpi"><span>المصاريف</span><strong>{{ expense_total|floatformat:2 }}</strong></article>
+  <article class="kpi"><span>الورديات المفتوحة</span><strong>{{ open_shifts }}</strong></article>
+</section>
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="panel-head"><div><span class="eyebrow">الأكثر مبيعًا</span><h3>الأصناف حسب الإيراد</h3></div><a href="{% url 'reports:sales' %}">التفاصيل</a></div>
+    <div class="table-wrap"><table><thead><tr><th>الصنف</th><th>الخام</th><th>الإيراد</th><th>الربح</th></tr></thead><tbody>
+    {% for p in top_products %}<tr><td>{{ p.product__name }}</td><td>{{ p.quantity|floatformat:3 }}</td><td>{{ p.revenue|floatformat:2 }}</td><td>{{ p.profit|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4" class="empty">لا توجد مبيعات خلال الفترة.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  <section class="panel"><div class="panel-head"><div><span class="eyebrow">الوصول السريع</span><h3>تقارير مَرسى</h3></div></div>
+    <div class="module-grid"><a href="{% url 'reports:sales' %}"><b>تقرير المبيعات</b><span>الأوزان والإيرادات والربح</span></a><a href="{% url 'reports:inventory' %}"><b>تقرير المخزون</b><span>الكميات والقيمة والتكلفة</span></a><a href="{% url 'reports:waste' %}"><b>تقرير الهدر</b><span>الهدر والتكلفة حسب النوع</span></a><a href="{% url 'reports:financial_ledger' %}"><b>دفتر النقدية</b><span>الداخل والخارج والصافي</span></a></div>
+  </section>
+</div>
+{% endblock %}

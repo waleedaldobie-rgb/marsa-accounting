@@ -1,0 +1,2 @@
+{% extends 'base.html' %}{% block title %}إغلاق وردية | مَرسى{% endblock %}{% block page_heading %}إغلاق الوردية #{{ shift.id }}{% endblock %}{% block content %}
+<div class="card"><p>الفرع: <b>{{ shift.branch.name }}</b> — الكاشير: <b>{{ shift.cashier.get_full_name|default:shift.cashier.username }}</b></p><p>النقد المتوقع: <b>{{ shift.closing.expected_cash|default:'سيتم حسابه تلقائيًا' }}</b></p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn primary" type="submit">حفظ مسودة الإغلاق</button></form></div>{% endblock %}

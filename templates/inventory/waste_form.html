@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block title %}تسجيل هدر | مَرسى{% endblock %}{% block page_heading %}تسجيل هدر جديد{% endblock %}{% block content %}
+<div class="card form-card"><form method="post">{% csrf_token %}{{ form.as_p }}<p class="hint">سيبقى السجل مسودة ولن يتغير المخزون حتى الاعتماد.</p><button class="btn primary" type="submit">حفظ المسودة</button> <a class="btn" href="{% url 'inventory:waste_list' %}">إلغاء</a></form></div>
+{% endblock %}

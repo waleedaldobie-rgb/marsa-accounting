@@ -1,0 +1,5 @@
+from django.conf import settings
+from django.db import models
+class Expense(models.Model):
+    class Status(models.TextChoices): DRAFT='DRAFT','Draft'; APPROVED='APPROVED','Approved'; CANCELLED='CANCELLED','Cancelled'
+    branch=models.ForeignKey('branches.Branch',on_delete=models.PROTECT); shift=models.ForeignKey('sales.Shift',null=True,blank=True,on_delete=models.PROTECT,related_name='expenses'); category=models.CharField(max_length=120); amount=models.DecimalField(max_digits=16,decimal_places=2); payment_method=models.CharField(max_length=20,default='CASH'); status=models.CharField(max_length=20,choices=Status.choices,default=Status.DRAFT); attachment=models.FileField(upload_to='expenses/',blank=True); created_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT); created_at=models.DateTimeField(auto_now_add=True); approved_by=models.ForeignKey(settings.AUTH_USER_MODEL,null=True,blank=True,on_delete=models.PROTECT,related_name="approved_expenses"); approved_at=models.DateTimeField(null=True,blank=True); cancelled_at=models.DateTimeField(null=True,blank=True)

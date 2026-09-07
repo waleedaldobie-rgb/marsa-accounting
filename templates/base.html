@@ -1,0 +1,49 @@
+{% load static %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0B2447">
+  <title>{% block title %}مَرسى{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  {% if request.user.is_authenticated %}
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">م</div><div><strong>مَرسى</strong><small>إدارة محلات الأسماك</small></div></div>
+      <nav class="side-nav">
+        <a class="active" href="/">الرئيسية</a>
+        <a href="/sales/pos/">نقطة البيع <span>POS</span></a>
+        <a href="/sales/">المبيعات</a>
+        <a href="/inventory/">المخزون</a>
+        <a href="/purchases/">المشتريات</a>
+        <a href="#">التحويلات</a>
+        <a href="/catalog/products/">المنتجات</a>
+        <a href="/catalog/suppliers/">الموردون</a>
+        <a href="/expenses/">المصاريف</a>
+        <a href="/delivery/">التوصيل</a>
+        <a href="/sales/shifts/">الورديات</a>
+        <a href="/closing/">الإغلاق المحاسبي</a>
+        <a href="{% url 'reports:dashboard' %}">التقارير</a>
+        {% if request.user.is_staff %}<a href="/admin/">الإدارة</a>{% endif %}
+      </nav>
+      <div class="sidebar-footer"><span class="status-dot"></span> النظام يعمل</div>
+    </aside>
+    <section class="page-area">
+      <header class="topbar">
+        <div><span class="eyebrow">لوحة التحكم</span><h1>{% block page_heading %}نظرة عامة{% endblock %}</h1></div>
+        <div class="top-actions"><div class="branch-pill">{{ marsa_branch|default:'كل الفروع' }}</div><div class="user-chip"><b>{{ request.user.get_full_name|default:request.user.username }}</b><small>{{ marsa_role }}</small></div><form method="post" action="/logout/">{% csrf_token %}<button class="link-button" type="submit">خروج</button></form></div>
+      </header>
+      <main class="content">{% block content %}{% endblock %}</main>
+    </section>
+  </div>
+  {% else %}
+    {% block unauthenticated %}{% endblock %}
+  {% endif %}
+</body>
+</html>
