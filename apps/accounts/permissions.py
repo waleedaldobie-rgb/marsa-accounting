@@ -2,6 +2,7 @@ from functools import wraps
 
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 
 ROLE_PERMISSIONS = {
@@ -58,3 +59,54 @@ def require_same_branch(user, branch_id):
     if has_role(user, "OWNER") or getattr(user, "is_superuser", False):
         return True
     return bool(user.branch_id and int(user.branch_id) == int(branch_id))
+
+
+def can_create_sale(user, branch_id, shift=None):
+    if not has_permission(user, "manage_sales") or not require_same_branch(user, branch_id):
+        return False
+    return bool(shift is None or user.is_superuser or shift.cashier_id == user.pk)
+
+
+def can_issue_sale(user, sale):
+    return has_permission(user, "manage_sales") and require_same_branch(user, sale.branch_id)
+
+
+def can_approve_purchase(user, purchase):
+    if not has_permission(user, "approve_purchases"):
+        return False
+    if purchase.location.branch_id is None:
+        return has_role(user, "OWNER", "ACCOUNTANT")
+    return require_same_branch(user, purchase.location.branch_id)
+
+
+def branch_or_central_queryset(queryset, user, branch_field="branch"):
+    """Scope branch documents while allowing accountant/owner access to central records."""
+    if has_role(user, "OWNER") or getattr(user, "is_superuser", False):
+        return queryset
+    branch_id = getattr(user, "branch_id", None)
+    if not branch_id:
+        return queryset.none()
+    if has_role(user, "ACCOUNTANT"):
+        return queryset.filter(Q(**{f"{branch_field}_id": branch_id}) | Q(**{f"{branch_field}_id__isnull": True}))
+    return queryset.filter(**{f"{branch_field}_id": branch_id})
+
+
+def can_create_transfer(user, source):
+    return has_permission(user, "create_transfers") and require_same_branch(user, source.branch_id)
+
+
+def can_receive_transfer(user, destination):
+    return has_permission(user, "receive_transfers") and require_same_branch(user, destination.branch_id)
+
+
+def can_close_shift(user, shift):
+    if not require_same_branch(user, shift.branch_id):
+        return False
+    return bool(
+        has_permission(user, "manage_closing")
+        or (has_permission(user, "view_own_shift") and shift.cashier_id == user.pk)
+    )
+
+
+def can_view_reports(user):
+    return has_permission(user, "view_reports")

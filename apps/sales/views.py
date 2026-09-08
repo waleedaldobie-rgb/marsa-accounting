@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from apps.accounts.permissions import require_permission
+from apps.accounts.permissions import branch_queryset, has_role, require_permission, require_same_branch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -14,9 +14,7 @@ from apps.catalog.models import Product
 @login_required
 @require_permission("view_sales")
 def sale_list(request):
-    sales = Sale.objects.select_related("branch", "shift", "created_by").order_by("-created_at")
-    if request.user.branch_id:
-        sales = sales.filter(branch_id=request.user.branch_id)
+    sales = branch_queryset(Sale.objects.select_related("branch", "shift", "created_by").order_by("-created_at"), request.user)
     q=request.GET.get("q", "").strip()
     status=request.GET.get("status", "").strip()
     channel=request.GET.get("channel", "").strip()
@@ -72,9 +70,7 @@ def pos(request):
 @login_required
 @require_permission("view_sales")
 def sale_detail(request, pk):
-    sale = get_object_or_404(Sale.objects.prefetch_related("items", "items__processing"), pk=pk)
-    if request.user.branch_id and sale.branch_id != request.user.branch_id:
-        raise PermissionDenied
+    sale = get_object_or_404(branch_queryset(Sale.objects.prefetch_related("items", "items__processing"), request.user), pk=pk)
     return render(request, "sales/sale_detail.html", {"sale": sale})
 
 @login_required
@@ -82,9 +78,7 @@ def sale_detail(request, pk):
 def sale_issue(request, pk):
     if request.method != "POST":
         return redirect("sales:detail", pk=pk)
-    sale = get_object_or_404(Sale, pk=pk)
-    if request.user.branch_id and sale.branch_id != request.user.branch_id:
-        raise PermissionDenied
+    sale = get_object_or_404(branch_queryset(Sale.objects.all(), request.user), pk=pk)
     location_id = request.POST.get("location_id")
     location = get_object_or_404(Location, pk=location_id)
     payment_method = request.POST.get("payment_method", "CASH")
@@ -100,7 +94,9 @@ def sale_issue(request, pk):
 @require_permission("view_own_shift")
 def shift_list(request):
     shifts = Shift.objects.select_related("cashier", "branch").order_by("-opened_at")
-    if request.user.branch_id:
+    if not (request.user.is_superuser or has_role(request.user, "OWNER", "ACCOUNTANT")):
+        shifts = shifts.filter(cashier=request.user)
+    elif request.user.branch_id:
         shifts = shifts.filter(branch_id=request.user.branch_id)
     return render(request, "sales/shifts.html", {"shifts": shifts})
 
@@ -111,8 +107,8 @@ def shift_open(request):
         if Shift.objects.filter(cashier=request.user, status=Shift.Status.OPEN).exists():
             messages.error(request, "لديك وردية مفتوحة بالفعل.")
             return redirect("sales:shifts")
-        branch_id = request.user.branch_id or request.POST.get("branch_id")
-        if not branch_id:
+        branch_id = request.user.branch_id
+        if not branch_id or not require_same_branch(request.user, branch_id):
             messages.error(request, "يجب تحديد الفرع.")
             return redirect("sales:shifts")
         Shift.objects.create(branch_id=branch_id, cashier=request.user, opening_cash=request.POST.get("opening_cash") or 0)

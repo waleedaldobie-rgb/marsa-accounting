@@ -12,7 +12,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import has_permission, has_role
+from apps.accounts.permissions import has_permission, has_role, branch_or_central_queryset, branch_queryset
 from apps.branches.models import Branch, Location
 from apps.catalog.models import Product, ProductPrice, Supplier
 from apps.closing.models import ShiftClosing
@@ -164,7 +164,7 @@ class PurchaseView(APIView):
         serializer = PurchaseSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         location = get_object_or_404(Location, pk=serializer.validated_data["location"].pk)
-        if not (request.user.is_superuser or request.user.is_owner or location.branch_id == request.user.branch_id):
+        if not (request.user.is_superuser or request.user.is_owner or (request.user.role == "ACCOUNTANT" and location.branch_id is None) or location.branch_id == request.user.branch_id):
             return forbidden("لا يمكنك إنشاء شراء خارج فرعك.")
         serializer.save(created_by=request.user)
         return Response(PurchaseSerializer(serializer.instance).data, status=status.HTTP_201_CREATED)
@@ -174,9 +174,7 @@ class PurchaseApproveView(APIView):
     def post(self, request, pk):
         if not require(request.user, "approve_purchases"):
             return forbidden()
-        purchase = get_object_or_404(Purchase, pk=pk)
-        if not (request.user.is_superuser or request.user.is_owner or purchase.location.branch_id == request.user.branch_id):
-            return forbidden()
+        purchase = get_object_or_404(branch_or_central_queryset(Purchase.objects.select_related("location"), request.user, "location__branch"), pk=pk)
         try:
             return Response(PurchaseSerializer(approve_purchase(purchase_id=pk, user=request.user)).data)
         except (ValidationError, ValueError) as exc:
@@ -199,9 +197,7 @@ class PurchaseReturnView(APIView):
     def approve(self, request, pk):
         if not require(request.user, "approve_purchases"):
             return forbidden()
-        ret = get_object_or_404(PurchaseReturn.objects.select_related("location"), pk=pk)
-        if not in_user_branch(request.user, ret.location.branch_id):
-            return forbidden()
+        ret = get_object_or_404(branch_or_central_queryset(PurchaseReturn.objects.select_related("location"), request.user, "location__branch"), pk=pk)
         try:
             return Response(PurchaseReturnSerializer(approve_purchase_return(return_obj=ret, user=request.user)).data)
         except (ValidationError, ValueError) as exc:
@@ -243,7 +239,10 @@ class SaleView(APIView):
             return forbidden()
         serializer = SaleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        shift = get_object_or_404(Shift.objects.select_related("branch"), pk=serializer.validated_data["shift"].pk)
+        shift_qs = Shift.objects.select_related("branch")
+        if not (request.user.is_superuser or request.user.is_owner):
+            shift_qs = shift_qs.filter(branch_id=request.user.branch_id, cashier=request.user)
+        shift = get_object_or_404(shift_qs, pk=serializer.validated_data["shift"].pk)
         items = serializer.validated_data.get("items", [])
         try:
             sale = create_sale_draft(user=request.user, shift=shift, branch=shift.branch, items=items)
@@ -256,9 +255,7 @@ class SaleIssueView(APIView):
     def post(self, request, pk):
         if not require(request.user, "manage_sales"):
             return forbidden()
-        sale = get_object_or_404(Sale.objects.select_related("branch"), pk=pk)
-        if not in_user_branch(request.user, sale.branch_id):
-            return forbidden()
+        sale = get_object_or_404(branch_queryset(Sale.objects.select_related("branch"), request.user), pk=pk)
         location = get_object_or_404(Location, pk=request.data.get("location"))
         try:
             sale = issue_sale(sale=sale, location=location, user=request.user, payment_method=request.data.get("payment_method", "CASH"))
@@ -284,9 +281,7 @@ class SalesReturnView(APIView):
     def approve(self, request, pk):
         if not require(request.user, roles=("OWNER", "ACCOUNTANT", "BRANCH_MANAGER")):
             return forbidden()
-        ret = get_object_or_404(SalesReturn.objects.select_related("branch"), pk=pk)
-        if not in_user_branch(request.user, ret.branch_id):
-            return forbidden()
+        ret = get_object_or_404(branch_queryset(SalesReturn.objects.select_related("branch"), request.user), pk=pk)
         location = get_object_or_404(Location, pk=request.data.get("location"))
         try:
             return Response(SalesReturnSerializer(approve_sales_return(sales_return=ret, location=location, user=request.user, request=request)).data)
@@ -312,9 +307,7 @@ class TransferView(APIView):
     def send(self, request, pk):
         if not require(request.user, "create_transfers"):
             return forbidden()
-        transfer = get_object_or_404(Transfer.objects.select_related("source"), pk=pk)
-        if not in_user_branch(request.user, transfer.source.branch_id):
-            return forbidden()
+        transfer = get_object_or_404(branch_queryset(Transfer.objects.select_related("source"), request.user, "source__branch"), pk=pk)
         try:
             return Response(TransferSerializer(send_transfer(transfer_id=pk, user=request.user)).data)
         except (ValidationError, ValueError) as exc:
@@ -323,9 +316,7 @@ class TransferView(APIView):
     def receive(self, request, pk):
         if not require(request.user, "receive_transfers"):
             return forbidden()
-        transfer = get_object_or_404(Transfer.objects.select_related("destination"), pk=pk)
-        if not in_user_branch(request.user, transfer.destination.branch_id):
-            return forbidden()
+        transfer = get_object_or_404(branch_queryset(Transfer.objects.select_related("destination"), request.user, "destination__branch"), pk=pk)
         try:
             return Response(TransferSerializer(receive_transfer(transfer_id=pk, user=request.user)).data)
         except (ValidationError, ValueError) as exc:
@@ -352,9 +343,7 @@ class ExpenseView(APIView):
     def approve(self, request, pk):
         if not require(request.user, "approve_expenses"):
             return forbidden()
-        expense = get_object_or_404(Expense, pk=pk)
-        if not in_user_branch(request.user, expense.branch_id):
-            return forbidden()
+        expense = get_object_or_404(branch_queryset(Expense.objects.all(), request.user), pk=pk)
         try:
             return Response(ExpenseSerializer(approve_expense(expense=expense, user=request.user)).data)
         except (ValidationError, ValueError) as exc:
@@ -385,9 +374,7 @@ class ClosingView(APIView):
     def approve(self, request, pk):
         if not require(request.user, "approve_closing"):
             return forbidden()
-        closing = get_object_or_404(ShiftClosing.objects.select_related("shift"), pk=pk)
-        if not in_user_branch(request.user, closing.shift.branch_id):
-            return forbidden()
+        closing = get_object_or_404(branch_queryset(ShiftClosing.objects.select_related("shift"), request.user, "shift__branch"), pk=pk)
         try:
             return Response(ShiftClosingSerializer(approve_closing(closing=closing, user=request.user)).data)
         except (ValidationError, ValueError) as exc:

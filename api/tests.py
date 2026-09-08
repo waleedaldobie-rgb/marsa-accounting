@@ -71,4 +71,20 @@ class ApiSprint19Tests(APITestCase):
         self.assertEqual(create.status_code, 201)
         self.client.force_authenticate(self.user)
         issue = self.client.post(reverse("api-v1:sale-issue", kwargs={"pk": create.data["id"]}), {"location": self.location_b.pk}, format="json")
-        self.assertEqual(issue.status_code, 403)
+        self.assertEqual(issue.status_code, 404)
+
+    def test_direct_object_access_to_other_branch_is_hidden(self):
+        shift = Shift.objects.create(branch=self.branch_b, cashier=self.other, opening_cash=0)
+        sale = Sale.objects.create(invoice_no="B-1", shift=shift, branch=self.branch_b, created_by=self.other)
+        self.authenticate()
+        response = self.client.get(reverse("api-v1:sale-detail", kwargs={"pk": sale.pk}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_cashier_cannot_escalate_to_catalog_write(self):
+        self.authenticate()
+        response = self.client.post(reverse("api-v1:catalog"), {"name": "محاولة", "sku": "ESC-1", "description": ""}, format="json")
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthorized_api_post_is_rejected(self):
+        response = self.client.post(reverse("api-v1:shifts"), {"branch": self.branch_a.pk, "opening_cash": "0"}, format="json")
+        self.assertEqual(response.status_code, 401)

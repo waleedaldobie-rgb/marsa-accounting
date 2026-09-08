@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from apps.audit.services import log_event
+from apps.accounts.permissions import can_approve_purchase
 from apps.inventory.models import StockMovement
 from apps.inventory.services import apply_movement
 from .models import Purchase, PurchaseReturn
@@ -10,6 +11,8 @@ from .models import Purchase, PurchaseReturn
 @transaction.atomic
 def approve_purchase(*, purchase_id, user):
     purchase=Purchase.objects.select_for_update().prefetch_related('items').get(pk=purchase_id)
+    if not can_approve_purchase(user, purchase):
+        raise ValidationError('لا تملك صلاحية اعتماد هذا الشراء.')
     if purchase.status == Purchase.Status.APPROVED: return purchase
     if purchase.status != Purchase.Status.DRAFT: raise ValidationError('لا يمكن اعتماد الشراء في حالته الحالية.')
     if not purchase.items.exists(): raise ValidationError('أضف صنفًا واحدًا على الأقل قبل الاعتماد.')

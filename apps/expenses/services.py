@@ -7,6 +7,7 @@ from apps.sales.models import PaymentTransaction, Shift
 from .models import Expense
 from django.utils import timezone
 from apps.audit.services import log_event
+from apps.accounts.permissions import has_permission, require_same_branch
 
 
 @transaction.atomic
@@ -18,9 +19,9 @@ def approve_expense(*, expense, user):
         raise ValidationError('لا يمكن اعتماد المصروف في حالته الحالية.')
     if expense.amount <= 0:
         raise ValidationError('قيمة المصروف يجب أن تكون أكبر من صفر.')
-    if not user.is_superuser and getattr(user, 'role', None) not in {'OWNER', 'ACCOUNTANT'}:
+    if not has_permission(user, 'approve_expenses'):
         raise ValidationError('اعتماد المصاريف متاح للمالك والمحاسب فقط.')
-    if not user.is_superuser and user.branch_id != expense.branch_id:
+    if not require_same_branch(user, expense.branch_id):
         raise ValidationError('لا يمكنك اعتماد مصروف خارج فرعك.')
 
     shift = None
@@ -53,9 +54,9 @@ def cancel_expense(*, expense, user):
     expense = Expense.objects.select_for_update().get(pk=expense.pk)
     if expense.status != Expense.Status.DRAFT:
         raise ValidationError('لا يمكن إلغاء مصروف معتمد أو ملغى.')
-    if not user.is_superuser and getattr(user, 'role', None) not in {'OWNER', 'ACCOUNTANT'}:
+    if not has_permission(user, 'approve_expenses'):
         raise ValidationError('إلغاء المصاريف متاح للمالك والمحاسب فقط.')
-    if not user.is_superuser and user.branch_id != expense.branch_id:
+    if not require_same_branch(user, expense.branch_id):
         raise ValidationError('لا يمكنك إلغاء مصروف خارج فرعك.')
     expense.status = Expense.Status.CANCELLED
     expense.cancelled_at = timezone.now()

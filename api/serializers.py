@@ -169,6 +169,16 @@ class ExpenseSerializer(serializers.ModelSerializer):
         fields = ("id", "branch", "shift", "category", "amount", "payment_method", "status", "attachment", "created_by", "created_at", "approved_by", "approved_at", "cancelled_at")
         read_only_fields = ("id", "status", "created_by", "created_at", "approved_by", "approved_at", "cancelled_at")
 
+    def validate_attachment(self, attachment):
+        if not attachment:
+            return attachment
+        allowed = (".pdf", ".jpg", ".jpeg", ".png")
+        if not attachment.name.lower().endswith(allowed):
+            raise serializers.ValidationError("نوع الملف غير مسموح.")
+        if attachment.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("حجم الملف يجب ألا يتجاوز 5 ميجابايت.")
+        return attachment
+
 
 class ShiftClosingSerializer(serializers.ModelSerializer):
     class Meta:

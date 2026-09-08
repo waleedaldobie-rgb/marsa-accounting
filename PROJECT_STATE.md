@@ -181,3 +181,21 @@ Sprint 16: production-ready migrations after runtime verification, backup/restor
 
 ### Next
 Sprint 20 يجب أن يحدد صراحة قبل التنفيذ؛ لا توسع نطاق REST API تلقائيًا.
+
+
+## Sprint 20 — Security Hardening
+تم تنفيذ تقوية الأمان والصلاحيات وعزل الفروع. أضيفت سياسات مركزية للعمليات الحساسة، وتم تطبيق object-level authorization على واجهات المشتريات والمبيعات والورديات ونقاط API الحساسة. الوصول إلى كائن فرع آخر عبر معرّف مباشر لا يكشف وجوده ويعيد `404`.
+
+تم تعزيز الخدمات نفسها للتحقق من الدور والفرع، بما في ذلك البيع والمشتريات والتحويلات والإغلاق والمصروفات والهدر. كما أضيف تدقيق لاعتماد ورفض الإغلاق، إرسال واستلام التحويل، وإلغاء الهدر مع actor وobject وbefore/after عند الحاجة.
+
+أصبح `DEBUG=0` هو الافتراضي، ويطلب الإنتاج `DJANGO_SECRET_KEY`، وأضيفت إعدادات CSRF origins وSameSite cookies وHSTS وCross-Origin security headers. تم تقييد مرفقات المصروفات إلى PDF/JPG/PNG وبحد أقصى 5MB.
+
+### Verification
+- `python manage.py check --deploy` مع secret إنتاجي طويل: بلا تحذيرات.
+- `python manage.py check`: OK.
+- `pytest -q` داخل Docker/PostgreSQL: 21 passed.
+- `python -m compileall -q api apps config`: OK.
+- `git diff --check`: OK.
+
+### Next
+انتظار Sprint التالي صراحة؛ لا يتم توسيع نطاق العمل تلقائيًا.

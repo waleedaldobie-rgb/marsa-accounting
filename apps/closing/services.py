@@ -3,9 +3,10 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.permissions import has_role
+from apps.accounts.permissions import can_close_shift, has_role
 from apps.sales.models import PaymentTransaction, Shift
 from .models import ShiftClosing
+from apps.audit.services import log_event
 
 
 def expected_cash_for_shift(shift):
@@ -27,8 +28,8 @@ def create_closing(*, shift, actual_cash, user):
     shift = Shift.objects.select_for_update().get(pk=shift.pk)
     if shift.status != Shift.Status.OPEN:
         raise ValidationError('لا يمكن إنشاء إغلاق لوردية مغلقة.')
-    if not has_role(user, 'OWNER', 'ACCOUNTANT') and shift.cashier_id != user.pk:
-        raise ValidationError('لا يمكنك إغلاق وردية ليست ورديتك.')
+    if not can_close_shift(user, shift):
+        raise ValidationError('لا يمكنك إغلاق هذه الوردية.')
     actual_cash = Decimal(actual_cash)
     if actual_cash < 0:
         raise ValidationError('النقد الفعلي لا يمكن أن يكون سالبًا.')
@@ -73,6 +74,10 @@ def approve_closing(*, closing, user):
     shift.status = Shift.Status.CLOSED
     shift.closed_at = timezone.now()
     shift.save(update_fields=['status', 'closed_at'])
+    log_event(user=user, action='APPROVE', entity='ShiftClosing', entity_id=closing.pk,
+              old_value={'status': ShiftClosing.Status.DRAFT, 'shift_status': Shift.Status.OPEN},
+              new_value={'status': closing.status, 'shift_status': Shift.Status.CLOSED},
+              reason='اعتماد إغلاق الوردية')
     return closing
 
 
@@ -87,4 +92,7 @@ def reject_closing(*, closing, user):
     closing.approved_by = user
     closing.approved_at = timezone.now()
     closing.save(update_fields=['status', 'approved_by', 'approved_at'])
+    log_event(user=user, action='REJECT', entity='ShiftClosing', entity_id=closing.pk,
+              old_value={'status': ShiftClosing.Status.DRAFT}, new_value={'status': closing.status},
+              reason='رفض إغلاق الوردية')
     return closing

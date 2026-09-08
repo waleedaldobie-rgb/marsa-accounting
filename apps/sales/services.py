@@ -8,6 +8,7 @@ from apps.inventory.models import StockBalance, StockMovement
 from apps.inventory.services import apply_movement
 from apps.processing.models import ProcessingRecord
 from apps.audit.services import log_event
+from apps.accounts.permissions import can_create_sale, can_issue_sale
 from .models import PaymentTransaction, Sale, SaleItem, Shift
 from .invoice_sequence import allocate_invoice_number
 
@@ -19,10 +20,8 @@ def create_sale_draft(*, user, shift, branch, items):
     """Create a draft sale only; inventory and financial ledgers are untouched."""
     if shift.status != shift.Status.OPEN:
         raise ValidationError("الوردية يجب أن تكون مفتوحة.")
-    if shift.cashier_id != user.pk and not user.is_superuser:
-        raise ValidationError("لا يمكنك إنشاء فاتورة على وردية مستخدم آخر.")
-    if not user.is_superuser and getattr(user, "branch_id", None) != branch.pk:
-        raise ValidationError("لا يمكنك البيع خارج فرعك.")
+    if not can_create_sale(user, branch.pk, shift):
+        raise ValidationError("لا تملك صلاحية إنشاء البيع لهذه الوردية أو الفرع.")
     if not items:
         raise ValidationError("أضف صنفًا واحدًا على الأقل.")
     sale = Sale.objects.create(
@@ -66,6 +65,8 @@ def validate_sale_item(item):
 def issue_sale(*, sale, location, user, payment_method):
     """Issue a complete sale atomically: stock-out raw weight, processing, COGS, and one payment."""
     sale = Sale.objects.select_for_update().select_related("shift", "branch").get(pk=sale.pk)
+    if not can_issue_sale(user, sale):
+        raise ValidationError("لا تملك صلاحية إصدار بيع خارج نطاقك.")
     if sale.status == Sale.Status.ISSUED:
         return sale
     if sale.status != Sale.Status.DRAFT:

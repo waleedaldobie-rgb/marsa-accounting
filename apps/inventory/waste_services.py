@@ -5,6 +5,7 @@ from django.utils import timezone
 from .models import StockMovement, WasteAdjustment
 from .services import apply_movement
 from apps.audit.services import log_event
+from apps.accounts.permissions import has_permission, require_same_branch
 
 
 @transaction.atomic
@@ -14,9 +15,9 @@ def approve_waste(*, waste, user):
         return waste
     if waste.status != WasteAdjustment.Status.DRAFT:
         raise ValidationError('لا يمكن اعتماد سجل الهدر في حالته الحالية.')
-    if not user.is_superuser and getattr(user, 'role', None) not in {'OWNER', 'ACCOUNTANT', 'BRANCH_MANAGER'}:
+    if not has_permission(user, 'manage_waste'):
         raise ValidationError('لا تملك صلاحية اعتماد الهدر.')
-    if not user.is_superuser and getattr(user, 'role', None) != 'OWNER' and user.branch_id != waste.branch_id:
+    if not require_same_branch(user, waste.branch_id):
         raise ValidationError('لا يمكنك اعتماد هدر خارج فرعك.')
     waste.full_clean()
     if waste.processing_record_id:
@@ -53,7 +54,12 @@ def cancel_waste(*, waste, user):
     waste = WasteAdjustment.objects.select_for_update().get(pk=waste.pk)
     if waste.status != WasteAdjustment.Status.DRAFT:
         raise ValidationError('لا يمكن إلغاء سجل هدر معتمد أو ملغى.')
+    if not has_permission(user, 'manage_waste') or not require_same_branch(user, waste.branch_id):
+        raise ValidationError('لا تملك صلاحية إلغاء هذا الهدر.')
+    old_status = waste.status
     waste.status = WasteAdjustment.Status.CANCELLED
     waste.cancelled_at = timezone.now()
     waste.save(update_fields=['status', 'cancelled_at'])
+    log_event(user=user, action='CANCEL', entity='WasteAdjustment', entity_id=waste.pk,
+              old_value={'status': old_status}, new_value={'status': waste.status})
     return waste

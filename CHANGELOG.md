@@ -102,3 +102,7 @@ Added the formal UI/UX reference layer: DESIGN_SYSTEM.md, SCREENS.md, NAVIGATION
 - Reused existing domain services for sensitive operations and protected sensitive fields in serializers.
 - Added server-side role and branch isolation checks.
 - Added API tests; PostgreSQL runtime verification completed with 18 passing tests.
+
+
+## Sprint 20 — Security Hardening
+تم توحيد سياسات العمليات الحساسة وتطبيق عزل الفروع على مستوى الاستعلام والخدمة، مع منع كشف كائنات الفروع الأخرى عبر المعرفات المباشرة. أضيفت حماية للخدمات الحساسة والتدقيق لعمليات الإغلاق والتحويلات والهدر، وتم تشديد إعدادات Django الإنتاجية والتحقق من مرفقات المصروفات. نتيجة التحقق: 21 اختبارًا ناجحًا وفحص `check --deploy` بلا تحذيرات باستخدام secret إنتاجي طويل.
