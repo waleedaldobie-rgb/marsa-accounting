@@ -44,7 +44,7 @@ def approve_waste(*, waste, user):
     waste.approved_by = user
     waste.approved_at = timezone.now()
     waste.save(update_fields=['status', 'approved_by', 'approved_at'])
-    log_event(user=user, action='APPROVE', entity='WasteAdjustment', entity_id=waste.pk,
+    log_event(user=user, branch=waste.branch, action='APPROVE', entity='WasteAdjustment', entity_id=waste.pk,
               new_value={'status': waste.status, 'quantity': str(waste.quantity)})
     return waste
 
@@ -60,6 +60,6 @@ def cancel_waste(*, waste, user):
     waste.status = WasteAdjustment.Status.CANCELLED
     waste.cancelled_at = timezone.now()
     waste.save(update_fields=['status', 'cancelled_at'])
-    log_event(user=user, action='CANCEL', entity='WasteAdjustment', entity_id=waste.pk,
+    log_event(user=user, branch=waste.branch, action='CANCEL', entity='WasteAdjustment', entity_id=waste.pk,
               old_value={'status': old_status}, new_value={'status': waste.status})
     return waste

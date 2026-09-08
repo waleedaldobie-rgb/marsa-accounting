@@ -12,7 +12,7 @@ from .models import Product, ProductPrice, Supplier
 
 
 def _catalog_write_allowed(user):
-    return has_permission(user, "manage_catalog") or has_permission(user, "view_catalog") and user.role == "BRANCH_MANAGER"
+    return has_permission(user, "manage_catalog")
 
 
 @login_required

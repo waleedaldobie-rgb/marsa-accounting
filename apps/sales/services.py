@@ -131,7 +131,7 @@ def issue_sale(*, sale, location, user, payment_method):
         payment_method=payment_method, direction=PaymentTransaction.Direction.IN,
         reference_type="Sale", reference_id=sale.pk, created_by=user,
     )
-    log_event(user=user, action='ISSUE', entity='Sale', entity_id=sale.pk,
+    log_event(user=user, branch=sale.branch, action='ISSUE', entity='Sale', entity_id=sale.pk,
               new_value={'status': sale.status, 'total': str(sale.total)}, reason='إصدار فاتورة وخصم المخزون')
     return sale
 

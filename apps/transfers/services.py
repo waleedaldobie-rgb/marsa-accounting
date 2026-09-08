@@ -19,7 +19,7 @@ def send_transfer(*, transfer_id, user):
         apply_movement(product=i.product,location=t.source,movement_type=StockMovement.Type.TRANSFER_OUT,quantity=i.sent_quantity,unit_cost=b.average_cost,user=user,reference_type='Transfer',reference_id=t.pk)
     old_status = t.status
     t.status=Transfer.Status.SENT; t.sent_at=timezone.now(); t.save(update_fields=['status','sent_at'])
-    log_event(user=user, action='SEND', entity='Transfer', entity_id=t.pk,
+    log_event(user=user, branch=t.source.branch, action='SEND', entity='Transfer', entity_id=t.pk,
               old_value={'status': old_status}, new_value={'status': t.status})
     return t
 
@@ -36,6 +36,6 @@ def receive_transfer(*, transfer_id, user):
         if qty: apply_movement(product=i.product,location=t.destination,movement_type=StockMovement.Type.TRANSFER_IN,quantity=qty,unit_cost=source_cost,user=user,reference_type='Transfer',reference_id=t.pk)
     old_status = t.status
     t.status=Transfer.Status.RECEIVED; t.received_at=timezone.now(); t.save(update_fields=['status','received_at'])
-    log_event(user=user, action='RECEIVE', entity='Transfer', entity_id=t.pk,
+    log_event(user=user, branch=t.destination.branch, action='RECEIVE', entity='Transfer', entity_id=t.pk,
               old_value={'status': old_status}, new_value={'status': t.status})
     return t

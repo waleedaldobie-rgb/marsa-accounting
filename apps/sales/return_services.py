@@ -52,7 +52,7 @@ def approve_sales_return(*, sales_return, location, user, request=None):
     PaymentTransaction.objects.create(branch=ret.branch, shift=None, amount=ret.refund_amount,
         payment_method=ret.payment_method, direction=PaymentTransaction.Direction.OUT,
         reference_type='SalesReturn', reference_id=ret.pk, created_by=user)
-    log_event(user=user, action='APPROVE', entity='SalesReturn', entity_id=ret.pk,
+    log_event(user=user, branch=ret.branch, action='APPROVE', entity='SalesReturn', entity_id=ret.pk,
               new_value={'refund_amount':str(ret.refund_amount),'sale_id':ret.sale_id}, request=request)
     return ret
 
@@ -63,5 +63,5 @@ def cancel_sales_return(*, sales_return, user, request=None):
     if not user.is_superuser and getattr(user,'role',None) not in {'OWNER','ACCOUNTANT','BRANCH_MANAGER'}: raise ValidationError('لا تملك صلاحية إلغاء المرتجع.')
     if not user.is_superuser and getattr(user,'role',None)!='OWNER' and user.branch_id!=ret.branch_id: raise ValidationError('لا يمكنك إلغاء مرتجع خارج فرعك.')
     ret.status=SalesReturn.Status.CANCELLED; ret.cancelled_at=timezone.now(); ret.save(update_fields=['status','cancelled_at'])
-    log_event(user=user, action='CANCEL', entity='SalesReturn', entity_id=ret.pk, request=request)
+    log_event(user=user, branch=ret.branch, action='CANCEL', entity='SalesReturn', entity_id=ret.pk, request=request)
     return ret

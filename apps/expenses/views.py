@@ -21,7 +21,10 @@ def expense_create(request):
         if form.is_valid():
             expense = form.save(commit=False)
             expense.created_by = request.user
-            if not request.user.is_superuser and request.user.branch_id:
+            if not (request.user.is_superuser or request.user.is_owner):
+                if not request.user.branch_id:
+                    form.add_error(None, 'يجب ربط المستخدم بفرع قبل إنشاء مصروف.')
+                    return render(request, 'expenses/form.html', {'form': form})
                 expense.branch_id = request.user.branch_id
             expense.save()
             messages.success(request, 'تم إنشاء المصروف كمسودة. لن يؤثر ماليًا حتى الاعتماد.')

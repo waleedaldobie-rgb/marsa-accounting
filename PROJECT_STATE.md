@@ -199,3 +199,19 @@ Sprint 20 يجب أن يحدد صراحة قبل التنفيذ؛ لا توسع 
 
 ### Next
 انتظار Sprint التالي صراحة؛ لا يتم توسيع نطاق العمل تلقائيًا.
+
+
+## Sprint 20 — Supplemental Security Review
+بعد مراجعة التعليمات التفصيلية، تم تصحيح مسار الكاشير بإضافة `view_sales`، وتقييد كتابة الكتالوج إلى `manage_catalog`، وتطبيق عزل object-level على التوصيل ومرتجعات المبيعات والهدر. كما تم منع branch tampering في إنشاء المصروف والهدر، وإضافة سياسات مركزية إضافية للعرض والإدارة والاعتماد.
+
+أضيف حقل فرع صريح إلى `AuditLog` مع migration `audit.0002_auditlog_branch`، وربطت العمليات الحساسة بفرع الكائن أثناء التسجيل. طبقت migration داخل PostgreSQL.
+
+### Verification
+- `python manage.py migrate`: migration audit.0002 applied successfully.
+- `python manage.py check`: OK.
+- `python manage.py check --deploy` باستخدام secret إنتاجي طويل: بلا تحذيرات.
+- `pytest -q`: 24 passed.
+- `python -m compileall`: OK.
+
+### Decision
+الحالة الدقيقة لـ Sprint 20 هي PARTIAL، لأن المشروع لا يحتوي workflow مستقلًا مكتملًا لـ stock adjustment أو reversal/correction ولا شاشة/API مستقلة لـ Audit Log/User Management. تم منع المسارات غير الموجودة أو الحركة `CORRECTION` المباشرة بدل اختراع Business Logic جديد. الخطوة التالية الموصى بها هي Sprint 21 فقط بعد اعتماد قواعد التصحيح وسجل التدقيق وإدارة المستخدمين.

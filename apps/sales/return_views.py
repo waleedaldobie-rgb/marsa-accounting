@@ -17,8 +17,7 @@ def return_list(request):
 @login_required
 @require_permission('manage_sales')
 def return_create(request, sale_id):
-    sale=get_object_or_404(Sale,pk=sale_id,status=Sale.Status.ISSUED)
-    if request.user.branch_id and sale.branch_id!=request.user.branch_id: raise PermissionDenied
+    sale=get_object_or_404(branch_queryset(Sale.objects.all(), request.user),pk=sale_id,status=Sale.Status.ISSUED)
     if request.method=='POST':
         form=SalesReturnForm(request.POST)
         if form.is_valid():

@@ -17,7 +17,7 @@ ROLE_PERMISSIONS = {
         "manage_waste", "view_reports", "view_catalog", "view_purchases", "view_delivery",
     },
     "CASHIER": {
-        "open_shift", "manage_sales", "view_catalog", "view_own_shift",
+        "open_shift", "manage_sales", "view_sales", "view_catalog", "view_own_shift",
     },
 }
 
@@ -65,6 +65,38 @@ def can_create_sale(user, branch_id, shift=None):
     if not has_permission(user, "manage_sales") or not require_same_branch(user, branch_id):
         return False
     return bool(shift is None or user.is_superuser or shift.cashier_id == user.pk)
+
+
+def can_open_shift(user, branch_id):
+    return has_permission(user, "open_shift") and require_same_branch(user, branch_id)
+
+
+def can_return_sale(user, sale):
+    return has_permission(user, "manage_sales") and require_same_branch(user, sale.branch_id)
+
+
+def can_manage_expense(user, branch_id):
+    return has_permission(user, "manage_expenses") and require_same_branch(user, branch_id)
+
+
+def can_approve_expense(user, expense):
+    return has_permission(user, "approve_expenses") and require_same_branch(user, expense.branch_id)
+
+
+def can_manage_waste(user, branch_id):
+    return has_permission(user, "manage_waste") and require_same_branch(user, branch_id)
+
+
+def can_approve_waste(user, waste):
+    return has_permission(user, "manage_waste") and require_same_branch(user, waste.branch_id)
+
+
+def can_view_inventory(user):
+    return has_permission(user, "view_inventory")
+
+
+def can_view_audit(user):
+    return has_role(user, "OWNER", "ACCOUNTANT")
 
 
 def can_issue_sale(user, sale):

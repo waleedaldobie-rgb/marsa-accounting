@@ -22,7 +22,7 @@ def approve_purchase(*, purchase_id, user):
         total += item.quantity * item.unit_cost
         apply_movement(product=item.product,location=purchase.location,movement_type=StockMovement.Type.PURCHASE_IN,quantity=item.quantity,unit_cost=item.unit_cost,user=user,reference_type='Purchase',reference_id=purchase.pk)
     purchase.total=total; purchase.status=Purchase.Status.APPROVED; purchase.approved_by=user; purchase.save(update_fields=['total','status','approved_by'])
-    log_event(user=user,action='APPROVE',entity='Purchase',entity_id=purchase.pk,new_value={'total':str(total),'status':purchase.status})
+    log_event(user=user, branch=purchase.location.branch, action='APPROVE',entity='Purchase',entity_id=purchase.pk,new_value={'total':str(total),'status':purchase.status})
     return purchase
 
 @transaction.atomic
@@ -31,7 +31,7 @@ def cancel_purchase(*, purchase, user, reason):
     if purchase.status != Purchase.Status.DRAFT: raise ValidationError('لا يمكن إلغاء شراء غير مسودة.')
     if not reason.strip(): raise ValidationError('سبب الإلغاء مطلوب.')
     purchase.status=Purchase.Status.CANCELLED; purchase.save(update_fields=['status'])
-    log_event(user=user,action='CANCEL',entity='Purchase',entity_id=purchase.pk,reason=reason,old_value={'status':'DRAFT'},new_value={'status':'CANCELLED'})
+    log_event(user=user, branch=purchase.location.branch, action='CANCEL',entity='Purchase',entity_id=purchase.pk,reason=reason,old_value={'status':'DRAFT'},new_value={'status':'CANCELLED'})
     return purchase
 
 @transaction.atomic
@@ -48,5 +48,5 @@ def approve_purchase_return(*, return_obj, user):
         total += item.quantity * item.unit_cost
         apply_movement(product=item.product,location=ret.location,movement_type=StockMovement.Type.PURCHASE_RETURN,quantity=item.quantity,unit_cost=item.unit_cost,user=user,reference_type='PurchaseReturn',reference_id=ret.pk)
     ret.total=total; ret.status=PurchaseReturn.Status.APPROVED; ret.approved_by=user; ret.approved_at=timezone.now(); ret.save(update_fields=['total','status','approved_by','approved_at'])
-    log_event(user=user,action='APPROVE',entity='PurchaseReturn',entity_id=ret.pk,new_value={'total':str(total),'status':ret.status},reason=ret.reason)
+    log_event(user=user, branch=ret.location.branch, action='APPROVE',entity='PurchaseReturn',entity_id=ret.pk,new_value={'total':str(ret.total),'status':ret.status},reason=ret.reason)
     return ret

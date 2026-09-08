@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.permissions import can_close_shift, has_role
+from apps.accounts.permissions import can_close_shift, has_role, require_same_branch
 from apps.sales.models import PaymentTransaction, Shift
 from .models import ShiftClosing
 from apps.audit.services import log_event
@@ -59,7 +59,7 @@ def approve_closing(*, closing, user):
         raise ValidationError('لا يمكن اعتماد هذا الإغلاق في حالته الحالية.')
     if not has_role(user, 'OWNER', 'ACCOUNTANT'):
         raise ValidationError('اعتماد الإغلاق متاح للمالك والمحاسب فقط.')
-    if not user.is_superuser and user.branch_id != closing.shift.branch_id:
+    if not require_same_branch(user, closing.shift.branch_id):
         raise ValidationError('لا يمكنك اعتماد إغلاق خارج فرعك.')
     shift = Shift.objects.select_for_update().get(pk=closing.shift_id)
     if shift.status != Shift.Status.OPEN:
@@ -74,7 +74,7 @@ def approve_closing(*, closing, user):
     shift.status = Shift.Status.CLOSED
     shift.closed_at = timezone.now()
     shift.save(update_fields=['status', 'closed_at'])
-    log_event(user=user, action='APPROVE', entity='ShiftClosing', entity_id=closing.pk,
+    log_event(user=user, branch=closing.shift.branch, action='APPROVE', entity='ShiftClosing', entity_id=closing.pk,
               old_value={'status': ShiftClosing.Status.DRAFT, 'shift_status': Shift.Status.OPEN},
               new_value={'status': closing.status, 'shift_status': Shift.Status.CLOSED},
               reason='اعتماد إغلاق الوردية')
@@ -88,11 +88,13 @@ def reject_closing(*, closing, user):
         raise ValidationError('لا يمكن رفض إغلاق غير مسودة.')
     if not has_role(user, 'OWNER', 'ACCOUNTANT'):
         raise ValidationError('رفض الإغلاق متاح للمالك والمحاسب فقط.')
+    if not require_same_branch(user, closing.shift.branch_id):
+        raise ValidationError('لا يمكنك رفض إغلاق خارج فرعك.')
     closing.status = ShiftClosing.Status.REJECTED
     closing.approved_by = user
     closing.approved_at = timezone.now()
     closing.save(update_fields=['status', 'approved_by', 'approved_at'])
-    log_event(user=user, action='REJECT', entity='ShiftClosing', entity_id=closing.pk,
+    log_event(user=user, branch=closing.shift.branch, action='REJECT', entity='ShiftClosing', entity_id=closing.pk,
               old_value={'status': ShiftClosing.Status.DRAFT}, new_value={'status': closing.status},
               reason='رفض إغلاق الوردية')
     return closing

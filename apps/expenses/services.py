@@ -45,7 +45,7 @@ def approve_expense(*, expense, user):
     expense.approved_by = user
     expense.approved_at = timezone.now()
     expense.save(update_fields=['status','approved_by','approved_at'])
-    log_event(user=user, action='APPROVE', entity='Expense', entity_id=expense.pk, new_value={'amount':str(expense.amount)})
+    log_event(user=user, branch=expense.branch, action='APPROVE', entity='Expense', entity_id=expense.pk, new_value={'amount':str(expense.amount)})
     return expense
 
 
@@ -61,5 +61,5 @@ def cancel_expense(*, expense, user):
     expense.status = Expense.Status.CANCELLED
     expense.cancelled_at = timezone.now()
     expense.save(update_fields=['status','cancelled_at'])
-    log_event(user=user, action='CANCEL', entity='Expense', entity_id=expense.pk)
+    log_event(user=user, branch=expense.branch, action='CANCEL', entity='Expense', entity_id=expense.pk)
     return expense

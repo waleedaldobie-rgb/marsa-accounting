@@ -7,9 +7,10 @@ def _ip(request):
     return request.META.get('REMOTE_ADDR')
 
 
-def log_event(*, user=None, action, entity, entity_id, old_value=None, new_value=None, reason='', request=None):
+def log_event(*, user=None, branch=None, action, entity, entity_id, old_value=None, new_value=None, reason='', request=None):
     return AuditLog.objects.create(
         user=user,
+        branch=branch or getattr(user, 'branch', None),
         action=action,
         entity=entity,
         entity_id=str(entity_id),
