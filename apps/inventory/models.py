@@ -13,6 +13,42 @@ class StockBalance(models.Model):
         constraints = [models.UniqueConstraint(fields=['product', 'location'], name='uniq_stock_balance')]
 
 
+class StockAdjustment(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        APPROVED = 'APPROVED', 'Approved'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    branch = models.ForeignKey('branches.Branch', on_delete=models.PROTECT, related_name='stock_adjustments')
+    location = models.ForeignKey('branches.Location', on_delete=models.PROTECT, related_name='stock_adjustments')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    reason = models.TextField()
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='stock_adjustments_created')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name='stock_adjustments_approved')
+    created_at = models.DateTimeField(auto_now_add=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.location.kind != self.location.Kind.BRANCH or self.location.branch_id != self.branch_id:
+            raise ValidationError({'location': 'موقع التسوية يجب أن يكون مخزن الفرع المحدد.'})
+        if not self.reason.strip():
+            raise ValidationError({'reason': 'سبب التسوية مطلوب.'})
+
+
+class StockAdjustmentItem(models.Model):
+    adjustment = models.ForeignKey(StockAdjustment, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey('catalog.Product', on_delete=models.PROTECT)
+    system_quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    counted_quantity = models.DecimalField(max_digits=14, decimal_places=3)
+    difference = models.DecimalField(max_digits=14, decimal_places=3)
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['adjustment', 'product'], name='uniq_stock_adjustment_product')]
+
+
 class StockMovement(models.Model):
     class Type(models.TextChoices):
         PURCHASE_IN = 'PURCHASE_IN', 'Purchase In'

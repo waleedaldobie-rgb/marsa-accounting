@@ -4,7 +4,7 @@ from .views import (
     BranchLocationView, CatalogView, ClosingView, ExpenseView, InventoryView,
     MeView, PriceView, ProductDetailView, PurchaseApproveView, PurchaseReturnView,
     PurchaseView, ReportsView, SaleIssueView, SalesReturnView, SaleView, ShiftView,
-    SupplierView, TokenLoginView, TransferView,
+    SupplierView, TokenLoginView, TransferView, StockAdjustmentView, AuditLogView, UserAdminView,
 )
 
 app_name = "api-v1"
@@ -17,6 +17,10 @@ urlpatterns = [
     path("catalog/prices/", PriceView.as_view(), name="prices"),
     path("catalog/suppliers/", SupplierView.as_view(), name="suppliers"),
     path("inventory/", InventoryView.as_view(), name="inventory"),
+    path("inventory/adjustments/", StockAdjustmentView.as_view(), name="adjustments"),
+    path("inventory/adjustments/<int:pk>/", StockAdjustmentView.as_view(), name="adjustment-detail"),
+    path("inventory/adjustments/<int:pk>/approve/", StockAdjustmentView.as_view(), {"action": "approve"}, name="adjustment-approve"),
+    path("inventory/adjustments/<int:pk>/cancel/", StockAdjustmentView.as_view(), {"action": "cancel"}, name="adjustment-cancel"),
     path("purchases/", PurchaseView.as_view(), name="purchases"),
     path("purchases/<int:pk>/", PurchaseView.as_view(), name="purchase-detail"),
     path("purchases/<int:pk>/approve/", PurchaseApproveView.as_view(), name="purchase-approve"),
@@ -36,4 +40,7 @@ urlpatterns = [
     path("closing/shifts/<int:shift_id>/", ClosingView.as_view(), name="closing-shift"),
     path("closing/<int:pk>/approve/", ClosingView.as_view(), {"action": "approve"}, name="closing-approve"),
     path("reports/<str:report>/", ReportsView.as_view(), name="report"),
+    path("audit/", AuditLogView.as_view(), name="audit"),
+    path("users/", UserAdminView.as_view(), name="users"),
+    path("users/<int:pk>/", UserAdminView.as_view(), name="user-detail"),
 ]

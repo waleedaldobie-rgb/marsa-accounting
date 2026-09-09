@@ -215,3 +215,11 @@ Sprint 20 يجب أن يحدد صراحة قبل التنفيذ؛ لا توسع 
 
 ### Decision
 الحالة الدقيقة لـ Sprint 20 هي PARTIAL، لأن المشروع لا يحتوي workflow مستقلًا مكتملًا لـ stock adjustment أو reversal/correction ولا شاشة/API مستقلة لـ Audit Log/User Management. تم منع المسارات غير الموجودة أو الحركة `CORRECTION` المباشرة بدل اختراع Business Logic جديد. الخطوة التالية الموصى بها هي Sprint 21 فقط بعد اعتماد قواعد التصحيح وسجل التدقيق وإدارة المستخدمين.
+
+
+## Sprint 21 — Stock Adjustments, Audit Log & User Administration
+تمت إضافة دورة تسوية مخزون آمنة عبر `StockAdjustment` و`StockAdjustmentItem`. المسودة لا تؤثر على الرصيد، والاعتماد ينشئ `StockMovement` من النوع المناسب داخل transaction مع locking. أضيفت API للتسويات، وسجل تدقيق API وWeb UI للقراءة فقط، وإدارة مستخدمين API مع حماية الأدوار وكلمات المرور وآخر مالك نشط.
+
+التحقق داخل PostgreSQL: `pytest -q` أعاد 31 اختبارًا ناجحًا، و`python manage.py check` نجح، وتم تطبيق migration `inventory.0002_stockadjustment_stockadjustmentitem`.
+
+حالة Sprint 21: PARTIAL. لم ينفذ Reversal/Correction العام لأن الكود الحالي لا يوفر contract محاسبيًا موحدًا لعكس المستندات المالية والمخزنية، ولأن اختراع هذا المنطق قد يسبب أثرًا ماليًا غير صحيح.

@@ -110,3 +110,7 @@ Added the formal UI/UX reference layer: DESIGN_SYSTEM.md, SCREENS.md, NAVIGATION
 
 ## Sprint 20 — Supplemental Security Review
 تم تصحيح صلاحية الكاشير لمسار عرض تفاصيل البيع، وتقييد تعديل الكتالوج، وتشديد عزل التوصيل ومرتجعات المبيعات والهدر ومنع branch tampering. أضيف فرع صريح إلى AuditLog مع migration وربطته بالعمليات الحساسة. ارتفع الاختبار من 21 إلى 24 اختبارًا ناجحًا. الحالة النهائية المعلنة: PARTIAL بسبب عدم وجود workflow قائم مستقل للتصحيح/العكس أو شاشة/API مستقلة لإدارة سجل التدقيق والمستخدمين.
+
+
+## Sprint 21 — Stock Adjustments, Audit Log & User Administration
+أضيفت دورة Stock Adjustment ذرية ومقيدة بالفرع، مع API وmigration واختبارات تمنع تكرار الحركة وتعديل الرصيد مباشرة. أضيف Audit Log API وWeb UI للقراءة فقط، وإدارة مستخدمين API تحمي كلمات المرور وآخر مالك نشط. النتيجة: 31 اختبارًا ناجحًا. بقي Reversal/Correction العام غير منفذ بسبب غموض contract المحاسبي.

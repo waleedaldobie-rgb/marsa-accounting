@@ -1,10 +1,12 @@
 from rest_framework import serializers
+from apps.accounts.models import User
 
 from apps.branches.models import Branch, Location
 from apps.catalog.models import Product, ProductPrice, Supplier
 from apps.closing.models import ShiftClosing
 from apps.expenses.models import Expense
-from apps.inventory.models import StockBalance, StockMovement
+from apps.inventory.models import StockAdjustment, StockAdjustmentItem, StockBalance, StockMovement
+from apps.audit.models import AuditLog
 from apps.purchases.models import Purchase, PurchaseItem, PurchaseReturn, PurchaseReturnItem
 from apps.sales.models import Sale, SaleItem, SalesReturn, SalesReturnItem, Shift
 from apps.transfers.models import Transfer, TransferItem
@@ -61,6 +63,63 @@ class StockMovementSerializer(serializers.ModelSerializer):
         model = StockMovement
         fields = ("id", "product", "location", "movement_type", "quantity", "unit_cost", "total_cost", "reference_type", "reference_id", "reason", "created_by", "created_at")
         read_only_fields = fields
+
+
+class StockAdjustmentItemInputSerializer(serializers.Serializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True))
+    counted_quantity = serializers.DecimalField(max_digits=14, decimal_places=3, min_value=0)
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class StockAdjustmentItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockAdjustmentItem
+        fields = ('id', 'product', 'system_quantity', 'counted_quantity', 'difference', 'reason')
+        read_only_fields = fields
+
+
+class StockAdjustmentSerializer(serializers.ModelSerializer):
+    items = StockAdjustmentItemInputSerializer(many=True, write_only=True, required=False)
+    item_records = StockAdjustmentItemSerializer(source='items', many=True, read_only=True)
+
+    class Meta:
+        model = StockAdjustment
+        fields = ('id', 'branch', 'location', 'status', 'reason', 'created_by', 'approved_by', 'created_at', 'approved_at', 'cancelled_at', 'items', 'item_records')
+        read_only_fields = ('id', 'branch', 'status', 'created_by', 'approved_by', 'created_at', 'approved_at', 'cancelled_at', 'item_records')
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuditLog
+        fields = ('id', 'user', 'branch', 'action', 'entity', 'entity_id', 'old_value', 'new_value', 'reason', 'request_id', 'ip_address', 'created_at')
+        read_only_fields = fields
+
+
+class UserAdminSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'role', 'branch', 'is_active', 'password')
+        read_only_fields = ('id',)
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        if not password:
+            raise serializers.ValidationError({'password': 'كلمة المرور مطلوبة.'})
+        user = self.Meta.model(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
 
 
 class PurchaseItemInputSerializer(serializers.Serializer):

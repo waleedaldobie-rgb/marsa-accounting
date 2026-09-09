@@ -9,12 +9,12 @@ ROLE_PERMISSIONS = {
     "OWNER": {"*"},
     "ACCOUNTANT": {
         "view_reports", "manage_purchases", "approve_purchases", "manage_expenses", "manage_waste",
-        "approve_expenses", "manage_closing", "approve_closing", "manage_adjustments",
+        "approve_expenses", "manage_closing", "approve_closing", "manage_adjustments", "approve_adjustments",
         "view_inventory", "view_sales", "view_delivery", "view_catalog", "manage_catalog",
     },
     "BRANCH_MANAGER": {
         "view_inventory", "receive_transfers", "create_transfers", "manage_sales",
-        "manage_waste", "view_reports", "view_catalog", "view_purchases", "view_delivery",
+        "manage_waste", "manage_adjustments", "view_reports", "view_catalog", "view_purchases", "view_delivery",
     },
     "CASHIER": {
         "open_shift", "manage_sales", "view_sales", "view_catalog", "view_own_shift",
@@ -97,6 +97,18 @@ def can_view_inventory(user):
 
 def can_view_audit(user):
     return has_role(user, "OWNER", "ACCOUNTANT")
+
+
+def can_create_adjustment(user, branch_id):
+    return has_permission(user, "manage_adjustments") and require_same_branch(user, branch_id)
+
+
+def can_approve_adjustment(user, adjustment):
+    return has_permission(user, "approve_adjustments") and require_same_branch(user, adjustment.branch_id)
+
+
+def can_manage_users(user):
+    return bool(user and user.is_authenticated and (user.is_superuser or user.role == "OWNER"))
 
 
 def can_issue_sale(user, sale):

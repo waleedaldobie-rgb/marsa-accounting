@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, get_user_model
 from django.db.models import Sum
+from django.utils.dateparse import parse_date
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
@@ -12,14 +13,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import has_permission, has_role, branch_or_central_queryset, branch_queryset
+from apps.accounts.permissions import can_manage_users, can_view_audit, has_permission, has_role, branch_or_central_queryset, branch_queryset
 from apps.branches.models import Branch, Location
 from apps.catalog.models import Product, ProductPrice, Supplier
 from apps.closing.models import ShiftClosing
 from apps.closing.services import approve_closing, create_closing, expected_cash_for_shift
 from apps.expenses.models import Expense
 from apps.expenses.services import approve_expense
-from apps.inventory.models import StockBalance, StockMovement
+from apps.inventory.adjustment_services import approve_adjustment, cancel_adjustment, create_adjustment
+from apps.inventory.models import StockAdjustment, StockBalance, StockMovement
+from apps.audit.models import AuditLog
+from apps.audit.services import log_event
 from apps.purchases.models import Purchase, PurchaseReturn
 from apps.purchases.services import approve_purchase, approve_purchase_return
 from apps.reports.views import _date_range, _filter_period
@@ -34,7 +38,8 @@ from .serializers import (
     BranchSerializer, ExpenseSerializer, LocationSerializer, ProductPriceSerializer,
     ProductSerializer, PurchaseReturnSerializer, PurchaseSerializer, SaleSerializer,
     SalesReturnSerializer, ShiftClosingSerializer, ShiftSerializer, StockBalanceSerializer,
-    StockMovementSerializer, SupplierSerializer, TransferSerializer,
+    StockMovementSerializer, StockAdjustmentSerializer, SupplierSerializer, TransferSerializer,
+    AuditLogSerializer, UserAdminSerializer,
 )
 
 
@@ -70,6 +75,122 @@ class MeView(APIView):
     def get(self, request):
         u = request.user
         return Response({"id": u.pk, "username": u.username, "email": u.email, "role": u.role, "branch": u.branch_id, "is_staff": u.is_staff})
+
+
+class StockAdjustmentView(APIView):
+    def get(self, request, pk=None, action=None):
+        qs = branch_queryset(StockAdjustment.objects.prefetch_related('items'), request.user)
+        if pk is not None:
+            return Response(StockAdjustmentSerializer(get_object_or_404(qs, pk=pk)).data)
+        return Response(StockAdjustmentSerializer(qs.order_by('-created_at'), many=True).data)
+
+    def post(self, request, pk=None, action=None):
+        if action == 'approve':
+            adjustment = get_object_or_404(branch_queryset(StockAdjustment.objects.all(), request.user), pk=pk)
+            try:
+                return Response(StockAdjustmentSerializer(approve_adjustment(adjustment=adjustment, user=request.user)).data)
+            except (ValidationError, ValueError) as exc:
+                return bad(exc)
+        if action == 'cancel':
+            adjustment = get_object_or_404(branch_queryset(StockAdjustment.objects.all(), request.user), pk=pk)
+            try:
+                return Response(StockAdjustmentSerializer(cancel_adjustment(adjustment=adjustment, user=request.user)).data)
+            except (ValidationError, ValueError) as exc:
+                return bad(exc)
+        if not has_permission(request.user, 'manage_adjustments'):
+            return forbidden()
+        location = get_object_or_404(Location, pk=request.data.get('location'))
+        if not in_user_branch(request.user, location.branch_id):
+            return forbidden()
+        serializer = StockAdjustmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            adjustment = create_adjustment(
+                user=request.user, branch=location.branch, location=location,
+                reason=serializer.validated_data['reason'], items=serializer.validated_data.get('items', []),
+            )
+        except (ValidationError, ValueError) as exc:
+            return bad(exc)
+        return Response(StockAdjustmentSerializer(adjustment).data, status=status.HTTP_201_CREATED)
+
+
+class AuditLogView(APIView):
+    def get(self, request):
+        if not can_view_audit(request.user):
+            return forbidden()
+        qs = AuditLog.objects.select_related('user', 'branch').order_by('-created_at')
+        if not (request.user.is_superuser or request.user.is_owner):
+            qs = qs.filter(branch_id=request.user.branch_id)
+        for field in ('user_id', 'branch_id', 'action', 'entity'):
+            value = request.query_params.get(field)
+            if value:
+                qs = qs.filter(**{field: value})
+        if request.query_params.get('date_from'):
+            date = parse_date(request.query_params['date_from'])
+            if date:
+                qs = qs.filter(created_at__date__gte=date)
+        if request.query_params.get('date_to'):
+            date = parse_date(request.query_params['date_to'])
+            if date:
+                qs = qs.filter(created_at__date__lte=date)
+        return Response(AuditLogSerializer(qs[:300], many=True).data)
+
+    def post(self, request):
+        return Response({'detail': 'AuditLog للقراءة فقط.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class UserAdminView(APIView):
+    def get(self, request, pk=None):
+        if not can_manage_users(request.user):
+            return forbidden()
+        qs = get_user_model().objects.select_related('branch').order_by('username')
+        if not (request.user.is_superuser or request.user.is_owner):
+            qs = qs.filter(branch_id=request.user.branch_id)
+        if pk is not None:
+            return Response(UserAdminSerializer(get_object_or_404(qs, pk=pk)).data)
+        return Response(UserAdminSerializer(qs, many=True).data)
+
+    def post(self, request, pk=None):
+        if not can_manage_users(request.user):
+            return forbidden()
+        data = request.data.copy()
+        if not request.user.is_superuser and request.user.is_owner:
+            data['branch'] = request.user.branch_id
+        if data.get('role') == 'OWNER' and not request.user.is_superuser:
+            return forbidden('لا يمكن إنشاء مالك من خلال هذا الحساب.')
+        data.pop('is_superuser', None)
+        data.pop('is_staff', None)
+        serializer = UserAdminSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        log_event(user=request.user, branch=user.branch, action='CREATE_USER', entity='User', entity_id=user.pk,
+                  new_value={'username': user.username, 'role': user.role})
+        return Response(UserAdminSerializer(user).data, status=status.HTTP_201_CREATED)
+
+    def patch(self, request, pk):
+        if not can_manage_users(request.user):
+            return forbidden()
+        target = get_object_or_404(get_user_model(), pk=pk)
+        if not (request.user.is_superuser or target.branch_id == request.user.branch_id):
+            return forbidden()
+        data = request.data.copy()
+        data.pop('is_superuser', None)
+        data.pop('is_staff', None)
+        if data.get('role') == 'OWNER' and not request.user.is_superuser:
+            return forbidden('لا يمكن رفع المستخدم إلى مالك.')
+        if 'branch' in data and not request.user.is_superuser:
+            data['branch'] = request.user.branch_id
+        if target.pk == request.user.pk and data.get('role') and data['role'] != target.role:
+            return forbidden('لا يمكن تغيير دور المستخدم الحالي بهذه الطريقة.')
+        if target.role == 'OWNER' and data.get('is_active') is False:
+            if get_user_model().objects.filter(role='OWNER', is_active=True).count() <= 1:
+                return forbidden('لا يمكن تعطيل آخر مالك نشط.')
+        serializer = UserAdminSerializer(target, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        log_event(user=request.user, branch=user.branch, action='UPDATE_USER', entity='User', entity_id=user.pk,
+                  new_value={'username': user.username, 'role': user.role, 'is_active': user.is_active})
+        return Response(UserAdminSerializer(user).data)
 
 
 class CatalogView(APIView):
