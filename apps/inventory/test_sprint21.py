@@ -80,3 +80,34 @@ class Sprint21ApiTests(APITestCase):
         self.client.force_authenticate(self.owner)
         response = self.client.patch(reverse('api-v1:user-detail', kwargs={'pk': self.owner.pk}), {'is_active': False}, format='json')
         self.assertEqual(response.status_code, 403)
+
+
+class Sprint21WebUiTests(TestCase):
+    def setUp(self):
+        self.branch = Branch.objects.create(code='WEB-A', name='Web A')
+        self.location = Location.objects.create(name='Web warehouse', kind=Location.Kind.BRANCH, branch=self.branch)
+        self.owner = User.objects.create_user(username='owner-web-21', password='x', role=User.Role.OWNER, branch=self.branch)
+        self.manager = User.objects.create_user(username='manager-web-21', password='x', role=User.Role.BRANCH_MANAGER, branch=self.branch)
+        self.cashier = User.objects.create_user(username='cashier-web-21', password='x', role=User.Role.CASHIER, branch=self.branch)
+        self.product = Product.objects.create(name='Web fish', sku='WEB-1')
+
+    def test_adjustment_pages_are_reachable_and_cashier_is_denied(self):
+        self.client.force_login(self.manager)
+        self.assertEqual(self.client.get(reverse('inventory:adjustment_list')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('inventory:adjustment_create')).status_code, 200)
+        self.client.force_login(self.cashier)
+        self.assertEqual(self.client.get(reverse('inventory:adjustment_list')).status_code, 403)
+
+    def test_audit_and_user_pages_are_owner_only_as_defined(self):
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse('audit:list')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('accounts:user_list')).status_code, 200)
+        self.client.force_login(self.cashier)
+        self.assertEqual(self.client.get(reverse('audit:list')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('accounts:user_list')).status_code, 403)
+
+    def test_web_adjustment_create_saves_draft(self):
+        self.client.force_login(self.manager)
+        response = self.client.post(reverse('inventory:adjustment_create'), {'location': self.location.pk, 'product': self.product.pk, 'counted_quantity': '3', 'reason': 'جرد واجهة', 'item_reason': 'ملاحظة'}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(StockAdjustment.objects.filter(created_by=self.manager, status=StockAdjustment.Status.DRAFT).exists())

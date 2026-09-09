@@ -114,3 +114,7 @@ Added the formal UI/UX reference layer: DESIGN_SYSTEM.md, SCREENS.md, NAVIGATION
 
 ## Sprint 21 — Stock Adjustments, Audit Log & User Administration
 أضيفت دورة Stock Adjustment ذرية ومقيدة بالفرع، مع API وmigration واختبارات تمنع تكرار الحركة وتعديل الرصيد مباشرة. أضيف Audit Log API وWeb UI للقراءة فقط، وإدارة مستخدمين API تحمي كلمات المرور وآخر مالك نشط. النتيجة: 31 اختبارًا ناجحًا. بقي Reversal/Correction العام غير منفذ بسبب غموض contract المحاسبي.
+
+
+## Sprint 21 — UI Completion
+أضيفت واجهات Django Templates لتسويات المخزون، Audit Log، وإدارة المستخدمين، مع ربطها بالمسارات والتنقل وفرض الصلاحيات من الخادم. أضيفت اختبارات Web UI، وأصبح مجموع الاختبارات 34 ناجحًا. بقيت Correction/Reversal غير منفذة بسبب غياب contract محاسبي موحد.

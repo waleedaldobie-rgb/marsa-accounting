@@ -21,6 +21,7 @@
         <a href="/sales/pos/">نقطة البيع <span>POS</span></a>
         <a href="/sales/">المبيعات</a>
         <a href="/inventory/">المخزون</a>
+        {% if request.user.role == 'OWNER' or request.user.role == 'ACCOUNTANT' or request.user.role == 'BRANCH_MANAGER' or request.user.is_superuser %}<a href="{% url 'inventory:adjustment_list' %}">تسويات المخزون</a>{% endif %}
         <a href="/purchases/">المشتريات</a>
         <a href="#">التحويلات</a>
         <a href="/catalog/products/">المنتجات</a>
@@ -30,6 +31,8 @@
         <a href="/sales/shifts/">الورديات</a>
         <a href="/closing/">الإغلاق المحاسبي</a>
         <a href="{% url 'reports:dashboard' %}">التقارير</a>
+        {% if request.user.role == 'OWNER' or request.user.role == 'ACCOUNTANT' or request.user.is_superuser %}<a href="{% url 'audit:list' %}">سجل التدقيق</a>{% endif %}
+        {% if request.user.role == 'OWNER' or request.user.is_superuser %}<a href="{% url 'accounts:user_list' %}">المستخدمون</a>{% endif %}
         {% if request.user.is_staff %}<a href="/admin/">الإدارة</a>{% endif %}
       </nav>
       <div class="sidebar-footer"><span class="status-dot"></span> النظام يعمل</div>

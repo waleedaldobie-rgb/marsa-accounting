@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | مَرسى{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card form-card"><form method="post">{% csrf_token %}{{ form.as_p }}<div class="form-actions"><button class="btn primary" type="submit">حفظ</button><a class="btn" href="{% url 'accounts:user_list' %}">إلغاء</a></div></form></div>
+{% endblock %}

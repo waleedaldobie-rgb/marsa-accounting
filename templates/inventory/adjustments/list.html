@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}تسويات المخزون | مَرسى{% endblock %}
+{% block page_heading %}تسويات المخزون{% endblock %}
+{% block content %}
+<div class="page-actions"><a class="btn primary" href="{% url 'inventory:adjustment_create' %}">+ إنشاء تسوية</a></div>
+<div class="card"><div class="table-wrap"><table><thead><tr><th>#</th><th>الفرع</th><th>المنتج</th><th>الكمية</th><th>الفرق</th><th>السبب</th><th>الحالة</th><th>المنشئ</th><th>التاريخ</th><th>المعتمد</th><th>إجراء</th></tr></thead><tbody>
+{% for a in adjustments %}{% for item in a.items.all %}<tr><td><a href="{% url 'inventory:adjustment_detail' a.pk %}">#{{ a.pk }}</a></td><td>{{ a.branch.name }}</td><td>{{ item.product.name }}</td><td>{{ item.counted_quantity }}</td><td>{{ item.difference }}</td><td>{{ a.reason }}</td><td><span class="badge">{{ a.get_status_display }}</span></td><td>{{ a.created_by }}</td><td>{{ a.created_at|date:'Y-m-d H:i' }}</td><td>{{ a.approved_by|default:'-' }}</td><td><a class="btn" href="{% url 'inventory:adjustment_detail' a.pk %}">التفاصيل</a></td></tr>{% endfor %}{% empty %}<tr><td colspan="11" class="empty">لا توجد تسويات مخزون.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

@@ -223,3 +223,9 @@ Sprint 20 يجب أن يحدد صراحة قبل التنفيذ؛ لا توسع 
 التحقق داخل PostgreSQL: `pytest -q` أعاد 31 اختبارًا ناجحًا، و`python manage.py check` نجح، وتم تطبيق migration `inventory.0002_stockadjustment_stockadjustmentitem`.
 
 حالة Sprint 21: PARTIAL. لم ينفذ Reversal/Correction العام لأن الكود الحالي لا يوفر contract محاسبيًا موحدًا لعكس المستندات المالية والمخزنية، ولأن اختراع هذا المنطق قد يسبب أثرًا ماليًا غير صحيح.
+
+
+## Sprint 21 — UI Completion
+تم استكمال واجهات Django Templates المطلوبة لتسويات المخزون، Audit Log، وإدارة المستخدمين، وربطها بالـ URLs والصلاحيات وشريط التنقل. تشمل الواجهات القوائم، الإنشاء، التفاصيل، الاعتماد/الإلغاء، pagination، filters، confirmation dialogs، وحالات empty/error عبر رسائل Django.
+
+اختبارات Web UI الجديدة رفعت العدد من 31 إلى 34، وجميعها ناجحة داخل PostgreSQL. بقي Correction/Reversal غير منفذ لعدم وجود contract محاسبي معتمد في الخدمات الحالية.

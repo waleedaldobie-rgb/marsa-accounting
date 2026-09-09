@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}المستخدمون | مَرسى{% endblock %}
+{% block page_heading %}إدارة المستخدمين{% endblock %}
+{% block content %}
+<div class="page-actions"><a class="btn primary" href="{% url 'accounts:user_create' %}">+ إنشاء مستخدم</a></div>
+<div class="card"><div class="table-wrap"><table><thead><tr><th>الاسم</th><th>اسم المستخدم</th><th>البريد</th><th>الدور</th><th>الفرع</th><th>الحالة</th><th>آخر دخول</th><th>إجراءات</th></tr></thead><tbody>
+{% for user in users %}<tr><td>{{ user.get_full_name|default:'-' }}</td><td>{{ user.username }}</td><td>{{ user.email|default:'-' }}</td><td>{{ user.get_role_display }}</td><td>{{ user.branch|default:'-' }}</td><td><span class="badge">{% if user.is_active %}نشط{% else %}معطل{% endif %}</span></td><td>{{ user.last_login|date:'Y-m-d H:i'|default:'-' }}</td><td><a class="btn" href="{% url 'accounts:user_detail' user.pk %}">التفاصيل</a> <a class="btn" href="{% url 'accounts:user_edit' user.pk %}">تعديل</a></td></tr>{% empty %}<tr><td colspan="8" class="empty">لا يوجد مستخدمون.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

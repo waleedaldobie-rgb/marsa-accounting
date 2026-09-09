@@ -13,7 +13,7 @@
     <button class="primary-button" type="submit">تصفية</button>
   </form>
   <div class="table-wrap"><table><thead><tr><th>الوقت</th><th>المستخدم</th><th>الفرع</th><th>الإجراء</th><th>الكيان</th><th>السبب</th></tr></thead><tbody>
-  {% for log in logs %}<tr><td>{{ log.created_at|date:'Y-m-d H:i' }}</td><td>{{ log.user|default:'-' }}</td><td>{{ log.branch|default:'-' }}</td><td>{{ log.action }}</td><td>{{ log.entity }} #{{ log.entity_id }}</td><td>{{ log.reason|default:'-' }}</td></tr>{% empty %}<tr><td colspan="6" class="empty">لا توجد أحداث تدقيق.</td></tr>{% endfor %}
+  {% for log in logs %}<tr><td>{{ log.created_at|date:'Y-m-d H:i' }}</td><td>{{ log.user|default:'-' }}</td><td>{{ log.branch|default:'-' }}</td><td>{{ log.action }}</td><td><a href="{% url 'audit:detail' log.pk %}">{{ log.entity }} #{{ log.entity_id }}</a></td><td>{{ log.reason|default:'-' }}</td></tr>{% empty %}<tr><td colspan="6" class="empty">لا توجد أحداث تدقيق.</td></tr>{% endfor %}
   </tbody></table></div>
   <nav class="pagination">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">السابق</a>{% endif %}<span>صفحة {{ page.number }} من {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}">التالي</a>{% endif %}</nav>
 </section>

@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}إنشاء تسوية | مَرسى{% endblock %}
+{% block page_heading %}إنشاء تسوية مخزون{% endblock %}
+{% block content %}
+<div class="card form-card"><p class="hint">ستُحفظ التسوية كمسودة ولن يتغير الرصيد قبل الاعتماد.</p><form method="post">{% csrf_token %}{{ form.as_p }}<div class="form-actions"><button class="btn primary" type="submit">حفظ كمسودة</button><a class="btn" href="{% url 'inventory:adjustment_list' %}">إلغاء</a></div></form></div>
+{% endblock %}

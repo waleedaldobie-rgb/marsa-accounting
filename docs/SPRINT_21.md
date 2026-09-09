@@ -106,3 +106,40 @@ python -m compileall -q api apps config: OK
 ### Recommended Next Step
 
 **Sprint 22 فقط:** اعتماد وتنفيذ contract محاسبي موحد للتصحيح والعكس، ثم إضافة workflow خاص بالمستندات التي يثبت دعمها من الخدمات الحالية. لا يبدأ تلقائيًا.
+
+
+## UI Completion Review — Supplemental Requirement
+
+تمت إضافة وربط واجهات Django Templates التالية باستخدام `base.html` ونظام التصميم الحالي:
+
+| الشاشة | Template | URL | View | Permission | Status |
+|---|---|---|---|---|---|
+| Stock Adjustments List | `templates/inventory/adjustments/list.html` | `/inventory/adjustments/` | `adjustment_list` | `manage_adjustments` | DONE |
+| Create Adjustment | `templates/inventory/adjustments/form.html` | `/inventory/adjustments/new/` | `adjustment_create` | `manage_adjustments` | DONE |
+| Adjustment Detail | `templates/inventory/adjustments/detail.html` | `/inventory/adjustments/<id>/` | `adjustment_detail` | `manage_adjustments` | DONE |
+| Audit Log List | `templates/audit/list.html` | `/audit/` | `audit_list` | OWNER/ACCOUNTANT | DONE |
+| Audit Detail | `templates/audit/detail.html` | `/audit/<id>/` | `audit_detail` | OWNER/ACCOUNTANT | DONE |
+| Users | `templates/accounts/users/list.html` | `/accounts/users/` | `user_list` | OWNER/superuser | DONE |
+| User Create/Edit | `templates/accounts/users/form.html` | `/accounts/users/new/`, `/accounts/users/<id>/edit/` | `user_create`, `user_edit` | OWNER/superuser | DONE |
+| User Detail | `templates/accounts/users/detail.html` | `/accounts/users/<id>/` | `user_detail` | OWNER/superuser | DONE |
+| Correction/Reversal | — | — | — | — | NOT IMPLEMENTED |
+
+واجهات التسوية تشمل قائمة، إنشاء مسودة، التفاصيل، timeline مبسط للحالة، حركة المخزون الناتجة، اعتمادًا بتأكيد JavaScript، وإلغاءً يتطلب سببًا. واجهات Audit Log للقراءة فقط، وتحتوي على pagination وfilters وصفحة تفاصيل. واجهات المستخدمين تشمل القائمة والإنشاء والتعديل والتفاصيل وسجل النشاط.
+
+تم تحديث Sidebar لإظهار تسويات المخزون لمدير الفرع والمحاسب والمالك، وإظهار Audit Log للمحاسب والمالك، وإظهار المستخدمين للمالك فقط. الإخفاء ليس طبقة حماية؛ كل View يفرض الصلاحية وعزل الفرع server-side.
+
+عدد الاختبارات قبل إضافة واجهات Sprint 21: **31**.
+
+عدد الاختبارات بعد إضافة الواجهات: **34**.
+
+عدد الناجحة: **34**.
+
+عدد الفاشلة: **0**.
+
+أضيفت اختبارات Django test client للتحقق من وصول مدير الفرع إلى واجهات التسوية، منع الكاشير، وصول المالك إلى Audit Log وإدارة المستخدمين، وإنشاء مسودة تسوية من الويب.
+
+## Updated Final Decision
+
+**SPRINT 21: 🟡 PARTIAL**
+
+تم الآن استكمال الواجهات الفعلية للتسويات والتدقيق وإدارة المستخدمين. يبقى الجزء غير المنفذ هو Correction/Reversal، لأن المشروع لا يقدم contract محاسبيًا موحدًا لعكس المستندات المالية والمخزنية. لا توجد أزرار أو صفحات وهمية لهذا الجزء.

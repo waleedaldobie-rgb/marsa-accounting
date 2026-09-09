@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}تفاصيل التدقيق #{{ log.pk }} | مَرسى{% endblock %}
+{% block page_heading %}تفاصيل سجل التدقيق{% endblock %}
+{% block content %}
+<div class="card detail-grid"><div><span>التاريخ والوقت</span><strong>{{ log.created_at|date:'Y-m-d H:i:s' }}</strong></div><div><span>المستخدم</span><strong>{{ log.user|default:'-' }}</strong></div><div><span>الفرع</span><strong>{{ log.branch|default:'-' }}</strong></div><div><span>الإجراء</span><strong>{{ log.action }}</strong></div><div><span>الكيان</span><strong>{{ log.entity }} #{{ log.entity_id }}</strong></div><div><span>IP</span><strong>{{ log.ip_address|default:'-' }}</strong></div><div><span>Request ID</span><strong>{{ log.request_id|default:'-' }}</strong></div><div><span>السبب</span><strong>{{ log.reason|default:'-' }}</strong></div></div>
+<div class="card"><h3>القيمة السابقة</h3><pre>{{ log.old_value }}</pre></div><div class="card"><h3>القيمة الجديدة</h3><pre>{{ log.new_value }}</pre></div>
+<a class="btn" href="{% url 'audit:list' %}">العودة للسجل</a>
+{% endblock %}

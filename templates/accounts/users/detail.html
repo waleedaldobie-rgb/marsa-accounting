@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}تفاصيل المستخدم | مَرسى{% endblock %}
+{% block page_heading %}تفاصيل المستخدم{% endblock %}
+{% block content %}
+<div class="card detail-grid"><div><span>الاسم</span><strong>{{ managed_user.get_full_name|default:'-' }}</strong></div><div><span>اسم المستخدم</span><strong>{{ managed_user.username }}</strong></div><div><span>البريد</span><strong>{{ managed_user.email|default:'-' }}</strong></div><div><span>الدور</span><strong>{{ managed_user.get_role_display }}</strong></div><div><span>الفرع</span><strong>{{ managed_user.branch|default:'-' }}</strong></div><div><span>الحالة</span><strong>{% if managed_user.is_active %}نشط{% else %}معطل{% endif %}</strong></div><div><span>آخر دخول</span><strong>{{ managed_user.last_login|date:'Y-m-d H:i'|default:'-' }}</strong></div></div>
+<div class="page-actions"><a class="btn primary" href="{% url 'accounts:user_edit' managed_user.pk %}">تعديل البيانات</a><a class="btn" href="{% url 'accounts:user_list' %}">العودة للمستخدمين</a></div>
+<div class="card"><h3>سجل النشاط</h3><div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الإجراء</th><th>الكيان</th><th>السبب</th></tr></thead><tbody>{% for log in logs %}<tr><td>{{ log.created_at|date:'Y-m-d H:i' }}</td><td>{{ log.action }}</td><td>{{ log.entity }} #{{ log.entity_id }}</td><td>{{ log.reason|default:'-' }}</td></tr>{% empty %}<tr><td colspan="4" class="empty">لا توجد أحداث مسجلة.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

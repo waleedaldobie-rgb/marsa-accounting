@@ -90,15 +90,17 @@ def approve_adjustment(*, adjustment, user):
 
 
 @transaction.atomic
-def cancel_adjustment(*, adjustment, user):
+def cancel_adjustment(*, adjustment, user, reason=''):
     adjustment = StockAdjustment.objects.select_for_update().select_related('branch').get(pk=adjustment.pk)
     if not can_create_adjustment(user, adjustment.branch_id):
         raise ValidationError('لا تملك صلاحية إلغاء هذه التسوية.')
     if adjustment.status != StockAdjustment.Status.DRAFT:
         raise ValidationError('لا يمكن إلغاء تسوية معتمدة أو ملغاة.')
+    if not reason or not reason.strip():
+        raise ValidationError('سبب الإلغاء مطلوب.')
     adjustment.status = StockAdjustment.Status.CANCELLED
     adjustment.cancelled_at = timezone.now()
     adjustment.save(update_fields=['status', 'cancelled_at'])
     log_event(user=user, branch=adjustment.branch, action='CANCEL', entity='StockAdjustment', entity_id=adjustment.pk,
-              old_value={'status': StockAdjustment.Status.DRAFT}, new_value={'status': adjustment.status})
+              old_value={'status': StockAdjustment.Status.DRAFT}, new_value={'status': adjustment.status}, reason=reason.strip())
     return adjustment
